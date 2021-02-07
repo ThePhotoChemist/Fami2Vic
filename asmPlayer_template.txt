@@ -1,0 +1,654 @@
+;Fami2Vic player for Expanded (8k) VIC-20
+
+
+*=$1700 
+
+defm    mPrint
+        LDA #/1
+        JSR PRINT_CHAR
+        endm
+
+defm    incAddr
+        LDA #0
+        STA $AC
+        INC $AD
+        endm
+
+defm    PrintValue
+                TAX
+                LDA #$00
+                JSR $DDCD
+                LDX #0
+                endm
+
+
+
+start   
+        LDA #10 ; set volume
+        STA VOLUME ; store volume
+
+        LDA s3addrlowconst
+        STA s3addrlow
+        LDA s3addrhighconst
+        STA s3addrhigh
+        LDA s2addrlowconst
+        STA s2addrlow
+        LDA s2addrhighconst
+        STA s2addrhigh
+        LDA s1addrhighconst
+        STA s1addrhigh
+        LDA s1addrlowconst
+        STA s1addrlow
+        LDA n4addrhighconst
+        STA n4addrhigh
+        LDA n4addrlowconst
+        STA n4addrlow
+
+        LDA #1
+        STA ByteOne
+        STA s3request
+        STA s2request
+        STA s1request
+        STA n4request
+
+        LDX #0 ; clear X register, used for indirect addressing
+
+soundloop
+
+        LDY #1
+        CPY s3request
+        BEQ s3requesthelp
+        CPY s2request
+        BEQ s2requesthelp
+        CPY s1request
+        BEQ s1requesthelp
+        CPY n4request
+        BEQ n4requesthelp
+        JMP sounddelaysetup
+
+s1requesthelp
+        JMP s1requestnote
+s2requesthelp
+        JMP s2requestnote
+s3requesthelp
+        JMP s3requestnote
+n4requesthelp
+        JMP n4requestnote
+
+
+        
+; -------------- S3 Note Request ---------;
+s3requestnote
+        LDA s3addrhigh ;load in current note index
+        STA AddrHigh
+        LDA s3addrlow ; load in current note index
+        STA AddrLow 
+        LDA ($AC,x) ;load in s3 note
+        CMP #80     ;if 80 then end program
+        BEQ exithelp
+
+        STA s3tonelow
+
+
+        LDA $AC      ;check AddrLow to see if it's about to overflow
+        CMP #255
+        BEQ s3inc1
+        INC $AC
+        JMP s3requestnote2
+
+
+exithelp
+        JMP exit
+
+s3inc1
+       LDA #0
+       STA $AC
+       INC $AD    
+
+s3requestnote2
+        LDA ($AC,x)
+        STA s3tonehigh
+
+        LDA $AC
+        CMP #255
+        BEQ s3inc2
+        INC $AC
+        JMP s3requestdur
+
+s3inc2
+       LDA #0
+       STA $AC
+       INC $AD  
+        
+s3requestdur
+
+        LDA ($AC,x)
+        STA s3duration
+
+        LDA $AC
+        CMP #255
+        BEQ s3inc3
+        INC $AC
+        JMP s3saveaddr
+        
+s3inc3
+       LDA #0
+       STA $AC
+       INC $AD
+
+s3saveaddr
+        LDA AddrLow
+        STA s3addrlow
+        LDA AddrHigh
+        STA s3addrhigh
+        LDA #0
+        STA s3request
+        STA s3loopcount
+
+        LDY #1
+        CPY s2request
+        BEQ s2requestnote
+        CPY s1request
+        BEQ s1requestnote
+        CPY n4request
+        BEQ n4requesthelp
+        JMP loadsound
+
+
+; -------------- S2 Note Request ---------;
+
+s2requestnote
+        LDA s2addrhigh ;load in current note index
+        STA AddrHigh
+        LDA s2addrlow ; load in current note index
+        STA AddrLow 
+        LDA ($AC,x) ;load in s2 note
+        STA s2tonelow
+
+
+        LDA $AC      ;check AddrLow to see if it's about to overflow
+        CMP #255
+        BEQ s2inc1
+        INC $AC
+        JMP s2requestnote2
+
+s2inc1
+       LDA #0
+       STA $AC
+       INC $AD    
+
+s2requestnote2
+        LDA ($AC,x)
+        STA s2tonehigh
+
+
+        LDA $AC
+        CMP #255
+        BEQ s2inc2
+        INC $AC
+        JMP s2requestdur
+
+s2inc2
+       LDA #0
+       STA $AC
+       INC $AD  
+        
+s2requestdur
+
+        LDA ($AC,x)
+        STA s2duration
+
+        LDA $AC
+        CMP #255
+        BEQ s2inc3
+        INC $AC
+        JMP s2saveaddr
+        
+s2inc3
+       LDA #0
+       STA $AC
+       INC $AD
+
+s2saveaddr
+        LDA AddrLow
+        STA s2addrlow
+        LDA AddrHigh
+        STA s2addrhigh
+        LDA #0
+        STA s2request
+        STA s2loopcount
+
+        LDA #1
+        CMP s1request
+        BEQ s1requestnote
+        CMP n4request
+        BEQ n4requestnote
+        JMP loadsound
+
+; -------------- s1 Note Request ---------;
+s1requestnote
+        LDA s1addrhigh ;load in current note index
+        STA AddrHigh
+        LDA s1addrlow ; load in current note index
+        STA AddrLow 
+        LDA ($AC,x) ;load in s1 note
+        STA s1tonelow
+
+
+        LDA $AC      ;check AddrLow to see if it's about to overflow
+        CMP #255
+        BEQ s1inc1
+        INC $AC
+        JMP s1requestnote2
+
+s1inc1
+       LDA #0
+       STA $AC
+       INC $AD    
+
+s1requestnote2
+        LDA ($AC,x)
+        STA s1tonehigh
+
+
+        LDA $AC
+        CMP #255
+        BEQ s1inc2
+        INC $AC
+        JMP s1requestdur
+
+s1inc2
+       LDA #0
+       STA $AC
+       INC $AD  
+        
+s1requestdur
+
+        LDA ($AC,x)
+        STA s1duration
+
+        LDA $AC
+        CMP #255
+        BEQ s1inc3
+        INC $AC
+        JMP s1saveaddr
+        
+s1inc3
+       LDA #0
+       STA $AC
+       INC $AD
+
+s1saveaddr
+        LDA AddrLow
+        STA s1addrlow
+        LDA AddrHigh
+        STA s1addrhigh
+        LDA #0
+        STA s1request
+        STA s1loopcount
+
+        LDA #1
+        CMP n4request
+        BEQ n4requestnote
+        JMP loadsound
+
+
+; -------------- n4 Note Request ---------;
+n4requestnote
+        LDA n4addrhigh ;load in current note index
+        STA AddrHigh
+        LDA n4addrlow ; load in current note index
+        STA AddrLow 
+        LDA ($AC,x) ;load in n4 note
+        STA n4tonelow
+
+
+        LDA $AC      ;check AddrLow to see if it's about to overflow
+        CMP #255
+        BEQ n4inc1
+        INC $AC
+        JMP n4requestdur
+
+n4inc1
+       LDA #0
+       STA $AC
+       INC $AD    
+        
+n4requestdur
+
+        LDA ($AC,x)
+        STA n4duration
+
+        LDA $AC
+        CMP #255
+        BEQ n4inc3
+        INC $AC
+        JMP n4saveaddr
+        
+n4inc3
+       LDA #0
+       STA $AC
+       INC $AD
+
+n4saveaddr
+        LDA AddrLow
+        STA n4addrlow
+        LDA AddrHigh
+        STA n4addrhigh
+        LDA #0
+        STA n4request
+        STA n4loopcount
+
+        ;LDA n4tonelow
+        ;PrintValue
+        ;mPrint 42
+        ;LDA n4duration
+        ;PrintValue
+        ;mPrint 43
+        ;LDA n4addrhigh
+        ;PrintValue
+        ;mPrint 43
+        ;LDA n4addrlow
+        ;PrintValue
+        ;mPrint 13
+
+
+; ---------- load sound --------- ;
+
+loadsound
+        LDA s3tonelow
+        STA S31
+        STA 4098
+        LDA s3tonehigh
+        STA s32
+        STA 37890
+
+        LDA s2tonelow
+        STA S21
+        STA 4097
+        LDA s2tonehigh
+        STA S22
+        STA 37889
+
+        LDA s1tonelow
+        STA S11
+        STA 4096
+        LDA s1tonehigh
+        STA S12
+        STA 37888
+
+        LDA n4tonelow
+        STA N4
+        STA 4099
+        LDA #2
+        STA 37888
+
+; ---------- sound delay loop --------- ;
+      
+sounddelaysetup
+        LDA #0
+        STA sounddelayhighbyte
+ 
+
+sounddelaylowsetup
+        LDA #0
+        STA sounddelaylowbyte
+
+sounddelaylow
+        LDA sounddelaylowbyte
+        CMP #190
+        BEQ sounddelayhigh
+        INC sounddelaylowbyte
+        JMP sounddelaylow
+
+sounddelayhigh
+        LDA #0
+        STA sounddelaylowbyte
+        LDA sounddelayhighbyte
+        CMP #1
+        BEQ sounddelayloop
+        INC sounddelayhighbyte
+        JMP sounddelaylow
+
+sounddelayloop                  ; used for duration counter
+        LDA #0
+        STA sounddelayhighbyte
+        STA sounddelaylowbyte
+        STA 37141               ; the "quality" register for 10-bit-ofr
+
+; ---------- S3 check for new note --------- ;
+s3newnotecheck
+        LDA s3loopcount
+        CMP s3duration
+        BEQ s3newnote
+        INC s3loopcount
+        JMP s2newnotecheck ; goto check to see if S2 needs a new note
+
+; ---------- S3 new note found, latch request --------- ;
+s3newnote
+        LDA #1
+        STA s3request
+
+
+; ---------- S2 check for new note --------- ;
+s2newnotecheck
+        LDA s2loopcount
+        CMP s2duration
+        BEQ s2newnote
+        INC s2loopcount
+        JMP s1newnotecheck
+
+; ---------- S2 new note found, latch request --------- ;
+s2newnote
+        LDA #1
+        STA s2request
+
+
+; ---------- S1 check for new note --------- ;
+s1newnotecheck
+        LDA s1loopcount
+        CMP s1duration
+        BEQ s1newnote
+        INC s1loopcount
+        JMP n4mutecheck
+
+; ----- helper for BEQ statements down here that can't reach the top-----;
+returntotop 
+        JMP soundloop
+
+; ---------- S1 new note found, latch request --------- ;
+s1newnote
+        LDA #1
+        STA s1request
+
+;     Noise Channel Mute     ;  - Mute after X loops without reseting note duration counter
+n4mutecheck                  ; - This makes the noise sound more like drums would
+        LDA n4loopcount
+        CMP #1
+        BEQ n4mute
+        JMP n4newnotecheck
+
+n4mute
+        LDA #0
+        STA N4          ; send 0 to noise voice register
+        STA 4099        ; send 0 to noise indicator on the screen
+
+n4newnotecheck
+        LDA n4loopcount
+        CMP n4duration
+        BEQ n4newnote
+        INC n4loopcount
+        JMP eyebrowinc
+
+n4newnote
+        LDA #1
+        STA n4request
+
+; Change eyebrow state every 40 loops ;        
+eyebrowinc
+        LDA eyebrowcount
+        CMP #39
+        BEQ eyebrowtest
+        INC eyebrowcount
+        JMP soundloop
+
+eyebrowtest
+        LDA 162 ;pull random number
+        AND #7  ; remove higher bits that would set background color
+        ORA #8  ; set bit to prevent inverted colors
+        STA 36879 ;send to color/border register
+
+
+       LDA #0
+       STA eyebrowcount
+       LDA eyebrowstate        ; if EyeBrowState=0 then goto draweyebrowraised
+       CMP #0
+       BEQ draweyebrowraised 
+
+draweyebrowlowered
+        LDA #160
+        STA 4172
+        STA 4173
+        STA 4174
+        STA 4178
+        STA 4198
+        LDA #32
+        STA 4194
+        STA 4220
+        STA 4201
+        LDA #7
+        STA 37964
+        STA 37965
+        STA 37966
+        STA 37967
+        STA 37968
+        STA 37970
+        STA 37990
+        LDA #14
+        STA 37986
+        STA 38012
+        LDA #0
+        STA eyebrowstate
+        JMP soundloop
+
+draweyebrowraised
+        LDA #32
+        STA 4172
+        STA 4173
+        STA 4174
+        STA 4178
+        STA 4198
+        LDA #160
+        STA 4194
+        STA 4220
+        STA 4201
+        STA 4175
+        STA 4176
+        LDA #14
+        STA 37966
+        STA 37967
+        STA 37968
+        STA 37990
+        LDA #7
+        STA 37986
+        STA 38012
+        STA 37970
+        STA 37967
+        STA 37968
+        LDA #1
+        STA 37993
+        STA eyebrowstate
+        JMP soundloop
+
+exit    LDA #0
+        STA VOLUME
+        LDA #147
+        JSR PRINT_CHAR
+        LDA #27
+        STA 36879
+        RTS
+
+
+PRINT_CHAR = $FFD2
+
+S11=248
+S21=249
+S31=250
+S12=251
+S22=252
+S32=253
+N4=36877
+
+AddrLow=$AC
+AddrHigh=$AD
+
+FrameCountHigh  byte 0
+FrameCountLow   byte 0
+
+
+ByteOne                 byte 0
+
+sounddelaylowbyte   byte 0
+sounddelayhighbyte  byte 0
+
+eyebrowcount     byte 0
+eyebrowstate    byte 0
+
+
+s3request       byte 0
+s3notepos       byte 0
+s3tonelow       byte 0
+s3tonehigh      byte 0
+s3duration      byte 0
+s3loopcount     byte 0
+s3addrhigh      byte 0
+s3addrlow       byte 0
+
+s2request       byte 0
+s2notepos       byte 0
+s2tonelow       byte 0
+s2tonehigh      byte 0
+s2duration      byte 0
+s2loopcount     byte 0
+s2addrhigh      byte 0
+s2addrlow       byte 0
+
+s1request       byte 0
+s1notepos       byte 0
+s1tonelow       byte 0
+s1tonehigh      byte 0
+s1duration      byte 0
+s1loopcount     byte 0
+s1addrhigh      byte 0
+s1addrlow       byte 0
+
+n4request       byte 0
+n4notepos       byte 0
+n4tonelow       byte 0
+n4tonehigh      byte 0
+n4duration      byte 0
+n4loopcount     byte 0
+n4addrhigh      byte 0
+n4addrlow       byte 0
+
+
+
+VOLUME=36878
+
+s3addrhighconst     byte $1B
+s3addrlowconst     byte $00
+
+s2addrhighconst     byte $21
+s2addrlowconst     byte $5B
+
+s1addrhighconst     byte $28
+s1addrlowconst     byte $B7
+
+n4addrhighconst     byte $37
+n4addrlowconst     byte $30
+
+
+
+*=$1B00
+
+sounddata
