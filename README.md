@@ -11,4 +11,4 @@ The script will spit out ASM source that can be compiled in CBM Studio.
 
 The compiled PRG file of "Wily's Castle 2" is included in the repo, and can be loaded on to a VIC-20 with an sd2iec, etc.  It requires an 8k RAM expansion to function properly.  
 
-Many thanks goes to Aleksi Eeben, for publishing his code for 10-bit oscillator resolution.  Without his work, the music from this script would sound about 500 times worse.  https://aleksieeben.myportfolio.com/toolsandhacks
+Many thanks goes to Aleksi Eeben (aka Viznut), for publishing his code for 10-bit oscillator resolution.  Without his work, the music from this script would sound about 500 times worse.  https://aleksieeben.myportfolio.com/toolsandhacks
