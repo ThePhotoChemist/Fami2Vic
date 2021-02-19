@@ -1,7 +1,7 @@
 ;Fami2Vic player for Expanded (8k) VIC-20
 
 
-*=$1700 
+*=$1750
 
 defm    mPrint
         LDA #/1
@@ -21,9 +21,28 @@ defm    PrintValue
                 LDX #0
                 endm
 
+defm    PrintHex ; print hex value to a screen location
+        pha
+        lsr
+        lsr
+        lsr
+        lsr
+        tax
+        lda convtable,x
+        sta /1
+        pla
+        and #$0f
+        tax
+        lda convtable,x
+        sta /2
+        LDX #0
+        endm
 
 
 start   
+        LDA numloopsconst
+        STA numloops
+loopstart
         LDA #10 ; set volume
         STA VOLUME ; store volume
 
@@ -51,7 +70,45 @@ start
         STA s1request
         STA n4request
 
-        LDX #0 ; clear X register, used for indirect addressing
+        mPrint 19 ; home
+        mPrint 13 ; return
+        mPrint 83 ; S
+        mPrint 49 ; 1
+        mPrint 61 ; =
+        mPrint 32 ; space
+        mPrint 32 ; space
+        mPrint 46 ; .
+        mPrint 32 ; space
+        mPrint 32 ; space
+        mPrint 13 ; return
+        mPrint 83 ; S
+        mPrint 50 ; 2
+        mPrint 61 ; =
+        mPrint 32 ; space
+        mPrint 32 ; space
+        mPrint 46 ; .
+        mPrint 32 ; space
+        mPrint 32 ; space
+        mPrint 13 ; return
+        mPrint 83 ; S
+        mPrint 51 ; 3
+        mPrint 61 ; =
+        mPrint 32 ; space
+        mPrint 32 ; space
+        mPrint 46 ; .
+        mPrint 32 ; space
+        mPrint 32 ; space
+        mPrint 13 ; return
+        mPrint 78 ; N
+        mPrint 52 ; 4
+        mPrint 61 ; =
+        mPrint 32 ; space
+        mPrint 32 ; space
+
+        LDX #0
+        
+        
+        
 
 soundloop
 
@@ -323,6 +380,7 @@ n4requestdur
         CMP #255
         BEQ n4inc3
         INC $AC
+
         JMP n4saveaddr
         
 n4inc3
@@ -339,18 +397,6 @@ n4saveaddr
         STA n4request
         STA n4loopcount
 
-        ;LDA n4tonelow
-        ;PrintValue
-        ;mPrint 42
-        ;LDA n4duration
-        ;PrintValue
-        ;mPrint 43
-        ;LDA n4addrhigh
-        ;PrintValue
-        ;mPrint 43
-        ;LDA n4addrlow
-        ;PrintValue
-        ;mPrint 13
 
 
 ; ---------- load sound --------- ;
@@ -359,6 +405,7 @@ loadsound
         LDA s3tonelow
         STA S31
         STA 4098
+
         LDA s3tonehigh
         STA s32
         STA 37890
@@ -383,6 +430,8 @@ loadsound
         LDA #2
         STA 37888
 
+
+
 ; ---------- sound delay loop --------- ;
       
 sounddelaysetup
@@ -395,8 +444,33 @@ sounddelaylowsetup
         STA sounddelaylowbyte
 
 sounddelaylow
+
+pwmcheck
+       LDA #0
+       CMP pwmval
+       BEQ pwmon
+       
+
+pwmoff
+      LDA #0
+      ;LDA n4tonelow
+      STA n4
+      LDA #0
+      STA pwmval
+      ;mPrint 42
+      JMP pwmdone
+
+pwmon 
+        LDA n4tonelow
+        STA n4
+        LDA #1
+        STA pwmval
+        ;mPrint 43
+
+pwmdone
+       
         LDA sounddelaylowbyte
-        CMP #190
+        CMP #70
         BEQ sounddelayhigh
         INC sounddelaylowbyte
         JMP sounddelaylow
@@ -404,11 +478,42 @@ sounddelaylow
 sounddelayhigh
         LDA #0
         STA sounddelaylowbyte
+        ;STA n4
+        ;STA n4tonelow
+        
+        
+
+displayinfo
+
+        ;PrintHex 4118,4119
+        LDA s1tonelow
+        PrintHex 4143,4144
+        LDA s1tonehigh
+        PrintHex 4146,4147
+
+        LDA s2tonelow
+        PrintHex 4165,4166
+        LDA s2tonehigh
+        PrintHex 4168,4169
+
+        LDA s3tonelow
+        PrintHex 4187,4188
+        LDA s3tonehigh
+        PrintHex 4190,4191
+
+        LDA n4tonelow
+        PrintHex 4209,4210
+
+
+
+
         LDA sounddelayhighbyte
         CMP #1
         BEQ sounddelayloop
         INC sounddelayhighbyte
         JMP sounddelaylow
+
+        
 
 sounddelayloop                  ; used for duration counter
         LDA #0
@@ -472,95 +577,55 @@ n4mute
         LDA #0
         STA N4          ; send 0 to noise voice register
         STA 4099        ; send 0 to noise indicator on the screen
+        STA n4tonelow
 
 n4newnotecheck
         LDA n4loopcount
         CMP n4duration
         BEQ n4newnote
         INC n4loopcount
-        JMP eyebrowinc
+        JMP frameinc
 
 n4newnote
         LDA #1
         STA n4request
 
-; Change eyebrow state every 40 loops ;        
-eyebrowinc
-        LDA eyebrowcount
-        CMP #39
-        BEQ eyebrowtest
-        INC eyebrowcount
+; Change frame state every 40 loops ;        
+frameinc
+        LDA framecount
+        CMP #159
+        BEQ frametest
+        INC framecount
         JMP soundloop
 
-eyebrowtest
-        LDA 162 ;pull random number
-        AND #7  ; remove higher bits that would set background color
-        ORA #8  ; set bit to prevent inverted colors
-        STA 36879 ;send to color/border register
-
-
+frametest
+        
        LDA #0
-       STA eyebrowcount
-       LDA eyebrowstate        ; if EyeBrowState=0 then goto draweyebrowraised
+       STA framecount
+       LDA framestate        ; if framestate=0 then goto frame0
        CMP #0
-       BEQ draweyebrowraised 
+       BEQ frame0 
 
-draweyebrowlowered
-        LDA #160
-        STA 4172
-        STA 4173
-        STA 4174
-        STA 4178
-        STA 4198
-        LDA #32
-        STA 4194
-        STA 4220
-        STA 4201
-        LDA #7
-        STA 37964
-        STA 37965
-        STA 37966
-        STA 37967
-        STA 37968
-        STA 37970
-        STA 37990
-        LDA #14
-        STA 37986
-        STA 38012
+frame1
+
         LDA #0
-        STA eyebrowstate
+        STA framestate
         JMP soundloop
 
-draweyebrowraised
-        LDA #32
-        STA 4172
-        STA 4173
-        STA 4174
-        STA 4178
-        STA 4198
-        LDA #160
-        STA 4194
-        STA 4220
-        STA 4201
-        STA 4175
-        STA 4176
-        LDA #14
-        STA 37966
-        STA 37967
-        STA 37968
-        STA 37990
-        LDA #7
-        STA 37986
-        STA 38012
-        STA 37970
-        STA 37967
-        STA 37968
+frame0
+
         LDA #1
-        STA 37993
-        STA eyebrowstate
+        STA framestate
         JMP soundloop
 
-exit    LDA #0
+loophelp
+        DEC numloops
+        JMP loopstart
+
+exit    
+        LDA #0
+        CMP numloops
+        BNE loophelp
         STA VOLUME
         LDA #147
         JSR PRINT_CHAR
@@ -568,6 +633,39 @@ exit    LDA #0
         STA 36879
         RTS
 
+div10
+        LDX #$11
+        LDA #$00
+        CLC
+loop    ROL
+        CMP #$0A
+        BCC skip
+        SBC #$0A
+skip    ROL div_lo
+        ROL div_hi
+        DEX
+        BNE loop
+        RTS
+
+
+printdur
+        lda n4duration
+        pha
+        lsr
+        lsr
+        lsr
+        lsr
+        tax
+        lda convtable,x
+        sta 4162
+        pla
+        and #$0f
+        tax
+        lda convtable,x
+        sta 4163
+        lda #0
+        sta 37954
+        sta 37955
 
 PRINT_CHAR = $FFD2
 
@@ -585,15 +683,35 @@ AddrHigh=$AD
 FrameCountHigh  byte 0
 FrameCountLow   byte 0
 
+pwmval  byte 0
 
+div_hi  byte 0
+div_lo byte 0
+
+convtable    byte $30,$31,$32,$33,$34,$35,$36,$37
+      byte $38,$39,$01,$02,$03,$04,$05,$06 
+
+s1string        null 'S1'
+                byte 61
+                byte 0
+s2string        null 'S2'
+                byte 61
+                byte 0
+s3string        null 'S3'
+                byte 61
+                byte 0
+
+
+BackgroundColor  byte 0
 ByteOne                 byte 0
 
 sounddelaylowbyte   byte 0
 sounddelayhighbyte  byte 0
 
-eyebrowcount     byte 0
-eyebrowstate    byte 0
+framecount     byte 0
+framestate    byte 0
 
+totalframecount byte 0
 
 s3request       byte 0
 s3notepos       byte 0
@@ -631,24 +749,12 @@ n4loopcount     byte 0
 n4addrhigh      byte 0
 n4addrlow       byte 0
 
+numloops        byte 0
 
 
 VOLUME=36878
 
-s3addrhighconst     byte $1B
-s3addrlowconst     byte $00
 
-s2addrhighconst     byte $21
-s2addrlowconst     byte $5B
+numloopsconst        byte 1
 
-s1addrhighconst     byte $28
-s1addrlowconst     byte $B7
-
-n4addrhighconst     byte $37
-n4addrlowconst     byte $30
-
-
-
-*=$1B00
-
-sounddata
+; auto generated script data goes here
