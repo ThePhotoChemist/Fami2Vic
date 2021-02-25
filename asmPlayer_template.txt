@@ -1,7 +1,16 @@
 ;Fami2Vic player for Expanded (8k) VIC-20
 
 
-*=$1750
+; 10 SYS (4645)
+
+*=$1201
+
+        BYTE    $0E, $12, $0A, $00, $9E, $20, $28,  $34, $36, $34, $35, $29, $00, $00, $00
+
+
+
+
+*=$1225
 
 defm    mPrint
         LDA #/1
@@ -42,25 +51,36 @@ defm    PrintHex ; print hex value to a screen location
 start   
         LDA numloopsconst
         STA numloops
+        LDX #0
+
+load10bitofr
+        LDA 10bitofr,x
+        STA 832,x
+        INX
+        TXA
+        CMP #84
+        BNE load10bitofr
+        JSR 832
+
 loopstart
         LDA #10 ; set volume
         STA VOLUME ; store volume
 
-        LDA s3addrlowconst
+        LDA s3addrlowlist
         STA s3addrlow
-        LDA s3addrhighconst
+        LDA s3addrhighlist
         STA s3addrhigh
-        LDA s2addrlowconst
+        LDA s2addrlowlist
         STA s2addrlow
-        LDA s2addrhighconst
+        LDA s2addrhighlist
         STA s2addrhigh
-        LDA s1addrhighconst
+        LDA s1addrhighlist
         STA s1addrhigh
-        LDA s1addrlowconst
+        LDA s1addrlowlist
         STA s1addrlow
-        LDA n4addrhighconst
+        LDA n4addrhighlist
         STA n4addrhigh
-        LDA n4addrlowconst
+        LDA n4addrlowlist
         STA n4addrlow
 
         LDA #1
@@ -70,40 +90,42 @@ loopstart
         STA s1request
         STA n4request
 
-        mPrint 19 ; home
-        mPrint 13 ; return
-        mPrint 83 ; S
-        mPrint 49 ; 1
-        mPrint 61 ; =
-        mPrint 32 ; space
-        mPrint 32 ; space
-        mPrint 46 ; .
-        mPrint 32 ; space
-        mPrint 32 ; space
-        mPrint 13 ; return
-        mPrint 83 ; S
-        mPrint 50 ; 2
-        mPrint 61 ; =
-        mPrint 32 ; space
-        mPrint 32 ; space
-        mPrint 46 ; .
-        mPrint 32 ; space
-        mPrint 32 ; space
-        mPrint 13 ; return
-        mPrint 83 ; S
-        mPrint 51 ; 3
-        mPrint 61 ; =
-        mPrint 32 ; space
-        mPrint 32 ; space
-        mPrint 46 ; .
-        mPrint 32 ; space
-        mPrint 32 ; space
-        mPrint 13 ; return
-        mPrint 78 ; N
-        mPrint 52 ; 4
-        mPrint 61 ; =
-        mPrint 32 ; space
-        mPrint 32 ; space
+        mPrint 19  ;home
+        mPrint 13  ;return
+        mPrint 83  ;S
+        mPrint 49  ;1
+        mPrint 61  ;=
+        mPrint 32  ;space
+        mPrint 32  ;space
+        mPrint 46  ;.
+        mPrint 32  ;space
+        mPrint 32  ;space
+        mPrint 13  ;return
+        mPrint 83  ;S
+        mPrint 50  ;2
+        mPrint 61  ;=
+        mPrint 32  ;space
+        mPrint 32  ;space
+        mPrint 46  ;.
+        mPrint 32  ;space
+        mPrint 32  ;space
+        mPrint 13  ;return
+        mPrint 83  ;S
+        mPrint 51  ;3
+        mPrint 61  ;=
+        mPrint 32  ;space
+        mPrint 32  ;space
+        mPrint 46  ;.
+        mPrint 32  ;space
+        mPrint 32  ;space
+        mPrint 13  ;return
+        mPrint 78  ;N
+        mPrint 52  ;4
+        mPrint 61  ;=
+        mPrint 32  ;space
+        mPrint 32  ;space
+
+        ;mPrint 147
 
         LDX #0
         
@@ -136,23 +158,62 @@ n4requesthelp
         
 ; -------------- S3 Note Request ---------;
 s3requestnote
-        LDA s3addrhigh ;load in current note index
+        LDA s3addrhigh          ;load in current note index
         STA AddrHigh
-        LDA s3addrlow ; load in current note index
+        LDA s3addrlow           ; load in current note index
         STA AddrLow 
-        LDA ($AC,x) ;load in s3 note
-        CMP #80     ;if 80 then end program
+        LDA ($AC,x)             ;load in s3 note
+
+        CMP #99                 ;if 99 then jump to new pattern request subroutine
+        BNE skipnewpatternreq   ;if not 99 then skip the JSR and load in the next note data
+
+newpatternreq
+        ;mPrint 42
+        INC patterncounter
+        LDX patterncounter
+
+        LDA s3addrhighlist,x
+        STA s3addrhigh
+        LDA s3addrlowlist,x
+        STA s3addrlow
+        LDA s2addrhighlist,x
+        STA s2addrhigh
+        LDA s2addrlowlist,x
+        STA s2addrlow
+        LDA s1addrhighlist,x
+        STA s1addrhigh
+        LDA s1addrlowlist,x
+        STA s1addrlow
+        LDA n4addrhighlist,x
+        STA n4addrhigh
+        LDA n4addrlowlist,x
+        STA n4addrlow 
+
+        LDA s3addrhigh
+        CMP #80
         BEQ exithelp
 
+        LDX #0
+        LDA s3addrhigh ; reload in the first s3 note, since the old code was 99
+        STA AddrHigh
+        LDA s3addrlow 
+        STA AddrLow 
+        LDA ($AC,x)
+
+skipnewpatternreq
+        TAX
+        LDA ToneLowByte,x
         STA s3tonelow
+        LDA ToneHighByte,x
+        STA s3tonehigh
+        LDX #0
 
 
         LDA $AC      ;check AddrLow to see if it's about to overflow
         CMP #255
         BEQ s3inc1
         INC $AC
-        JMP s3requestnote2
-
+        JMP s3requestdur
 
 exithelp
         JMP exit
@@ -162,20 +223,6 @@ s3inc1
        STA $AC
        INC $AD    
 
-s3requestnote2
-        LDA ($AC,x)
-        STA s3tonehigh
-
-        LDA $AC
-        CMP #255
-        BEQ s3inc2
-        INC $AC
-        JMP s3requestdur
-
-s3inc2
-       LDA #0
-       STA $AC
-       INC $AD  
         
 s3requestdur
 
@@ -208,8 +255,11 @@ s3saveaddr
         CPY s1request
         BEQ s1requestnote
         CPY n4request
-        BEQ n4requesthelp
+        BEQ n4requesthelp2
         JMP loadsound
+
+n4requesthelp2
+        JMP n4requestnote
 
 
 ; -------------- S2 Note Request ---------;
@@ -220,35 +270,25 @@ s2requestnote
         LDA s2addrlow ; load in current note index
         STA AddrLow 
         LDA ($AC,x) ;load in s2 note
+
+        TAX
+        LDA ToneLowByte,x
         STA s2tonelow
+        LDA ToneHighByte,x
+        STA s2tonehigh
+        LDX #0
 
 
         LDA $AC      ;check AddrLow to see if it's about to overflow
         CMP #255
         BEQ s2inc1
         INC $AC
-        JMP s2requestnote2
+        JMP s2requestdur
 
 s2inc1
        LDA #0
        STA $AC
        INC $AD    
-
-s2requestnote2
-        LDA ($AC,x)
-        STA s2tonehigh
-
-
-        LDA $AC
-        CMP #255
-        BEQ s2inc2
-        INC $AC
-        JMP s2requestdur
-
-s2inc2
-       LDA #0
-       STA $AC
-       INC $AD  
         
 s2requestdur
 
@@ -289,35 +329,25 @@ s1requestnote
         LDA s1addrlow ; load in current note index
         STA AddrLow 
         LDA ($AC,x) ;load in s1 note
+
+        TAX
+        LDA ToneLowByte,x
         STA s1tonelow
+        LDA ToneHighByte,x
+        STA s1tonehigh
+        LDX #0
 
 
         LDA $AC      ;check AddrLow to see if it's about to overflow
         CMP #255
         BEQ s1inc1
         INC $AC
-        JMP s1requestnote2
+        JMP s1requestdur
 
 s1inc1
        LDA #0
        STA $AC
        INC $AD    
-
-s1requestnote2
-        LDA ($AC,x)
-        STA s1tonehigh
-
-
-        LDA $AC
-        CMP #255
-        BEQ s1inc2
-        INC $AC
-        JMP s1requestdur
-
-s1inc2
-       LDA #0
-       STA $AC
-       INC $AD  
         
 s1requestdur
 
@@ -402,6 +432,10 @@ n4saveaddr
 ; ---------- load sound --------- ;
 
 loadsound
+        LDA SwapS2S3
+        CMP #1
+        BEQ loadsoundswap
+        
         LDA s3tonelow
         STA S31
         STA 4098
@@ -416,6 +450,25 @@ loadsound
         LDA s2tonehigh
         STA S22
         STA 37889
+        JMP afterswap
+
+loadsoundswap
+        LDA s2tonelow
+        STA S31
+        STA 4098
+
+        LDA s2tonehigh
+        STA s32
+        STA 37890
+
+        LDA s3tonelow
+        STA S21
+        STA 4097
+        LDA s3tonehigh
+        STA S22
+        STA 37889
+
+afterswap
 
         LDA s1tonelow
         STA S11
@@ -427,10 +480,6 @@ loadsound
         LDA n4tonelow
         STA N4
         STA 4099
-        LDA #2
-        STA 37888
-
-
 
 ; ---------- sound delay loop --------- ;
       
@@ -455,9 +504,7 @@ pwmoff
       LDA #0
       ;LDA n4tonelow
       STA n4
-      LDA #0
       STA pwmval
-      ;mPrint 42
       JMP pwmdone
 
 pwmon 
@@ -465,7 +512,6 @@ pwmon
         STA n4
         LDA #1
         STA pwmval
-        ;mPrint 43
 
 pwmdone
        
@@ -476,16 +522,10 @@ pwmdone
         JMP sounddelaylow
 
 sounddelayhigh
-        LDA #0
-        STA sounddelaylowbyte
-        ;STA n4
-        ;STA n4tonelow
-        
         
 
 displayinfo
 
-        ;PrintHex 4118,4119
         LDA s1tonelow
         PrintHex 4143,4144
         LDA s1tonehigh
@@ -504,7 +544,10 @@ displayinfo
         LDA n4tonelow
         PrintHex 4209,4210
 
-
+        LDA #0
+        STA sounddelaylowbyte
+        ;STA n4
+        ;STA n4tonelow
 
 
         LDA sounddelayhighbyte
@@ -533,6 +576,11 @@ s3newnotecheck
 s3newnote
         LDA #1
         STA s3request
+
+        ;LDA 162 ;pull random number
+        ;AND #7  ; remove higher bits that would set background color
+        ;ORA #27  ; set bit to prevent inverted colors
+        ;STA 36879 ;send to color/border register
 
 
 ; ---------- S2 check for new note --------- ;
@@ -593,7 +641,7 @@ n4newnote
 ; Change frame state every 40 loops ;        
 frameinc
         LDA framecount
-        CMP #159
+        CMP #149
         BEQ frametest
         INC framecount
         JMP soundloop
@@ -626,46 +674,17 @@ exit
         LDA #0
         CMP numloops
         BNE loophelp
+        STA patterncounter
         STA VOLUME
         LDA #147
         JSR PRINT_CHAR
         LDA #27
         STA 36879
+        LDA #64
+        STA 37150  ; shut down 10-bit-ofr oscillator code, since it stops the VIC from loading new programs
         RTS
-
-div10
-        LDX #$11
-        LDA #$00
-        CLC
-loop    ROL
-        CMP #$0A
-        BCC skip
-        SBC #$0A
-skip    ROL div_lo
-        ROL div_hi
-        DEX
-        BNE loop
-        RTS
-
-
-printdur
-        lda n4duration
-        pha
-        lsr
-        lsr
-        lsr
-        lsr
-        tax
-        lda convtable,x
-        sta 4162
-        pla
-        and #$0f
-        tax
-        lda convtable,x
-        sta 4163
-        lda #0
-        sta 37954
-        sta 37955
+   
+        
 
 PRINT_CHAR = $FFD2
 
@@ -684,9 +703,6 @@ FrameCountHigh  byte 0
 FrameCountLow   byte 0
 
 pwmval  byte 0
-
-div_hi  byte 0
-div_lo byte 0
 
 convtable    byte $30,$31,$32,$33,$34,$35,$36,$37
       byte $38,$39,$01,$02,$03,$04,$05,$06 
@@ -751,10 +767,22 @@ n4addrlow       byte 0
 
 numloops        byte 0
 
+patterncounter  byte 0
 
 VOLUME=36878
 
 
-numloopsconst        byte 1
+numloopsconst        byte 0
+
+ToneLowByte     byte 132,139,146,152,158,163,168,173,178,182,186,190,193,197,200,203,206,209,211,214,216,218,220,222,224,226,227,229,230,232,233,234,235,236,237,238,239,240,241,242,242,243,244,244,245,245,246,246,247,247,248,248,249,249,249,249,250,250,250,251,251,251,251,251,252,252,252,252,252,252,252,253,0
+ToneHighByte    byte 7,6,1,2,0,4,5,4,0,3,4,2,7,3,5,5,4,2,6,2,4,5,6,5,4,1,6,3,6,1,3,5,6,7,7,7,6,5,3,1,7,4,2,6,3,7,3,7,3,6,2,5,0,2,5,7,2,4,6,0,1,3,5,6,0,1,2,4,5,6,7,0,0
+
+10bitofr        byte    169,99,141,24,3,169,3,141,25,3,169,128,141,20,145,133,254,162,5,142,21,145,169
+                byte    0,149,248,202,16,251,169,192,141,30,145,96,72,152,72,138,72,6,254,144,2,230,254
+                byte    162,2,180,251,185,140,3,180,248,37,254,240,1,200,152,157,10,144,202,16,237,104
+                byte    170,104,168,104,44,20,145,64,0,128,136,146,170,218,238,254
+
 
 ; auto generated script data goes here
+
+

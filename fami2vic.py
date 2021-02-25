@@ -12,7 +12,7 @@ BlankLine="..."
 StopNote1="---"
 StopNote2="==="
 
-DataStartAddress="1D00"
+DataStartAddress="1E90"
 DataStartAddrDec=int(DataStartAddress,16)
 
 SwapS2S3=0
@@ -28,7 +28,7 @@ PercList=["0#","1#","2#","3#","4#","5#","6#","7#","8#","9#","A#","B#","C#","D#",
 
 ToneLowByte=[132,139,146,152,158,163,168,173,178,182,186,190,193,197,200,203,206,209,211,214,216,218,220,222,224,226,227,229,230,232,233,234,235,236,237,238,239,240,241,242,242,243,244,244,245,245,246,246,247,247,248,248,249,249,249,249,250,250,250,251,251,251,251,251,252,252,252,252,252,252,252,253]
 ToneHighByte=[7,6,1,2,0,4,5,4,0,3,4,2,7,3,5,5,4,2,6,2,4,5,6,5,4,1,6,3,6,1,3,5,6,7,7,7,6,5,3,1,7,4,2,6,3,7,3,7,3,6,2,5,0,2,5,7,2,4,6,0,1,3,5,6,0,1,2,4,5,6,7,0]
-PercTone=[135,147,151,159,163,167,175,179,183,187,191,195,199,201,203,207,209,212,215,217,219,221,223,225,227,228,229,231,232,233,235,236,237,238,239,240,241]
+PercTone=[135,147,151,159,163,167,172,179,183,187,191,195,199,201,203,207,209,212,215,217,219,221,223,225,227,228,229,231,232,233,235,236,237,238,239,240,241]
 
 DurationModifier=-1
 
@@ -183,7 +183,7 @@ for n in range(TotalPatterns):
 		if Square1EndedOnD00==0:
 		
 			if i==0 and Square1CurString==BlankLine:  #Set as "Stop Note" if no data on the first line
-				Square1Pattern[n].append(75)			#Code 75 is the "stop" note
+				Square1Pattern[n].append(72)			#Code 72 is the "stop" note
 				Square1LastFrame=i
 				
 			if Square1CurString!=BlankLine:
@@ -200,13 +200,13 @@ for n in range(TotalPatterns):
 					if i>0:
 						Square1NoteDuration=i-Square1LastFrame
 						Square1Pattern[n].append(Square1NoteDuration+DurationModifier)
-					Square1Pattern[n].append(75)
+					Square1Pattern[n].append(72)
 					Square1LastFrame=i
 	
 	###### Calculate Square2 Data ######
 		if Square2EndedOnD00==0:
 			if i==0 and Square2CurString==BlankLine:  #Set as "Stop Note" if no data on the first line
-				Square2Pattern[n].append(75)			#Code 75 is the "stop" note
+				Square2Pattern[n].append(72)			#Code 72 is the "stop" note
 				Square2LastFrame=i
 				
 			if Square2CurString!=BlankLine:
@@ -223,13 +223,13 @@ for n in range(TotalPatterns):
 					if i>0:
 						Square2NoteDuration=i-Square2LastFrame
 						Square2Pattern[n].append(Square2NoteDuration+DurationModifier)
-					Square2Pattern[n].append(75)
+					Square2Pattern[n].append(72)
 					Square2LastFrame=i				
 
 	###### Calculate Triangle Data ######		
 		if TriangleEndedOnD00==0:
 			if i==0 and TriangleCurString==BlankLine:  #Set as "Stop Note" if no data on the first line
-				TrianglePattern[n].append(75)			#Code 75 is the "stop" note
+				TrianglePattern[n].append(72)			#Code 72 is the "stop" note
 				TriangleLastFrame=i
 				
 			if TriangleCurString!=BlankLine:
@@ -246,13 +246,13 @@ for n in range(TotalPatterns):
 					if i>0:
 						TriangleNoteDuration=i-TriangleLastFrame
 						TrianglePattern[n].append(TriangleNoteDuration+DurationModifier)
-					TrianglePattern[n].append(75)
+					TrianglePattern[n].append(72)
 					TriangleLastFrame=i
 				
 	###### Calculate Noise Data ######		
 		if NoiseEndedOnD00==0:
 			if i==0 and NoiseCurString==BlankLine:  #Set as "Stop Note" if no data on the first line
-				NoisePattern[n].append(75)			#Code 75 is the "stop" note
+				NoisePattern[n].append(72)			#Code 72 is the "stop" note
 				NoiseLastFrame=i
 				
 			if NoiseCurString!=BlankLine:
@@ -271,7 +271,7 @@ for n in range(TotalPatterns):
 					if i>0:
 						NoiseNoteDuration=i-NoiseLastFrame
 						NoisePattern[n].append(NoiseNoteDuration+DurationModifier)
-					NoisePattern[n].append(75)
+					NoisePattern[n].append(72)
 					NoiseLastFrame=i
 		
 		if Square1Cmd=="D00":
@@ -318,7 +318,6 @@ for n in range(TotalPatterns):
 	TriangleEndedOnD00=0
 	NoiseEndedOnD00=0
 	
-print "NoisePattern is",NoisePattern
 	
 #############################################	
 ######## Build out note data for VIC ########
@@ -335,213 +334,368 @@ address_header_out=[] #array to store the address start locations for each of th
 bytestr="		byte "	
 TotalLength=0
 
-s3addr=hex(DataStartAddrDec)
-s3highstr=s3addr[2:4]
-s3lowstr=s3addr[4:6]
 
-program_data_out.append("; S3 Note Data   ")	
+s3Orders=[]
+s2Orders=[]
+s1Orders=[]
+n4Orders=[]
+
+s3usedpatterns=[]
+s3addrhighlist=[]
+s3addrlowlist=[]
+S3usedaddresseshigh=[]
+S3usedaddresseslow=[]
+
+program_data_out.append("; S3 Note Data   ")
+
 for n in range(TotalOrders):
-	
+
 	CurrentOrder=int(Square1Order[n], 16)
 	CurrentPattern=Square1Pattern[CurrentOrder]
-	
-	#print "Current Section is ",n,", loading in Pattern number ",CurrentOrder
 	CurrentPatternLen=len(CurrentPattern)
-	print "Current Pattern is :",CurrentPattern
 	
-	for i in range(CurrentPatternLen/2):
-		CurrentNoteEng=CurrentPattern[i*2]
-		CurrentDuration=CurrentPattern[i*2+1]
+	
+	if CurrentOrder in s3usedpatterns:
+		#print "Current Order is",CurrentOrder," and it has already been compiled, adding its address to the address list"
+		OrderIndex=s3usedpatterns.index(CurrentOrder)
+		s3addrhighstr=S3usedaddresseshigh[OrderIndex]
+		s3addrlowstr=S3usedaddresseslow[OrderIndex]
+		s3addrhighlist.append(s3addrhighstr)
+		s3addrlowlist.append(s3addrlowstr)
 		
-		if ((CurrentNoteEng != 75) and (CurrentNoteEng != 80)):  #Normal note positions
-			CurrentNotePos=ABCList.index(CurrentNoteEng)
-			ToneLow=ToneLowByte[CurrentNotePos+Square1NoteModifier]
-			ToneHigh=ToneHighByte[CurrentNotePos+Square1NoteModifier]
-			buildstr=bytestr + str(ToneLow) + "; S3 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(ToneHigh) + "; S3 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(CurrentDuration) + "; S3 Duration Data"
-			program_data_out.append(buildstr)
+	
+	
+	
+	if CurrentOrder not in s3usedpatterns:  #Check to see if the pattern has already been compiled
+		
+		#print "Current Order is:", CurrentOrder," and it has not yet been compiled.  Compiling..."
+	
+		s3addr=hex(DataStartAddrDec)
+		s3addrhighlist.append("$"+s3addr[2:4])
+		s3addrlowlist.append("$"+s3addr[4:6])
+		buildstr="; S3 Pattern " + str(CurrentOrder)
+		program_data_out.append(buildstr)
+		
+		
+		for i in range(CurrentPatternLen/2):
+			CurrentNoteEng=CurrentPattern[i*2]
+			CurrentDuration=CurrentPattern[i*2+1]
 			
-		if CurrentNoteEng==75:		#Stop Code
-			ToneHigh=0
-			ToneLow=0	
-			buildstr=bytestr + str(ToneLow) + "; S3 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(ToneHigh) + "; S3 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(CurrentDuration) + "; S3 Duration Data"
-			program_data_out.append(buildstr)
-			
-		DataStartAddrDec=DataStartAddrDec+3
-			
-buildstr=bytestr + str(80) + "; S3 End of Song code"
-program_data_out.append(buildstr)
-
-DataStartAddrDec=DataStartAddrDec+1
-s2addr=hex(DataStartAddrDec)
-s2highstr=s2addr[2:4]
-s2lowstr=s2addr[4:6]
-
-program_data_out.append("; S2 Note Data   ")		
-print "Square1 data compiled, starting Square2..."
-print ""
-
+			if ((CurrentNoteEng != 72) and (CurrentNoteEng != 80)):  #Normal note positions
+				CurrentNotePos=ABCList.index(CurrentNoteEng)
+				ToneLow=ToneLowByte[CurrentNotePos+Square1NoteModifier]
+				ToneHigh=ToneHighByte[CurrentNotePos+Square1NoteModifier]
+				#buildstr=bytestr + str(ToneLow) + "," + str(ToneHigh) + "," + str(CurrentDuration) + "; S3 low, high and duration"
+				buildstr=bytestr + str(CurrentNotePos+Square1NoteModifier) + "," + str(CurrentDuration) + "; S3 note and duration"
+				program_data_out.append(buildstr)						
+				
+				if CurrentNotePos+Square1NoteModifier<0:
+					print "Square1 offset is too much!  Array underflowed"
+					sys.exit()
+					
+			if CurrentNoteEng==72:		#Stop Code
+				ToneHigh=0
+				ToneLow=0	
+				#buildstr=bytestr + str(ToneLow) + "," + str(ToneHigh) + "," + str(CurrentDuration) + "; S3 low, high and duration"
+				buildstr=bytestr + str(72) + "," + str(CurrentDuration) + "; S3 note and duration"
+				program_data_out.append(buildstr)
+				
+			DataStartAddrDec=DataStartAddrDec+2
+		
+		s3usedpatterns.append(CurrentOrder)
+		S3usedaddresseshigh.append("$"+s3addr[2:4])
+		S3usedaddresseslow.append("$"+s3addr[4:6])
+		
+		
+		buildstr=bytestr + str(99) + "; S3 End Pattern Code"
+		program_data_out.append(buildstr)
+		DataStartAddrDec=DataStartAddrDec+1
+		
+	s3Orders.append(CurrentOrder)
+	
+s3addrhighlist.append(80) # append exit code, so the player knows when to stop playing
+		
+S2usedpatterns=[]
+S2addrhighlist=[]
+S2addrlowlist=[]
+S2usedaddresseshigh=[]
+S2usedaddresseslow=[]
+program_data_out.append("; S2 Note Data   ")	
+	
 for n in range(TotalOrders):
+
 	CurrentOrder=int(Square2Order[n], 16)
 	CurrentPattern=Square2Pattern[CurrentOrder]
 	CurrentPatternLen=len(CurrentPattern)
 	
-	for l in range(CurrentPatternLen/2):
-		TotalLength=TotalLength+int(CurrentPattern[2*l+1])
-	TotalLength=TotalLength+CurrentPatternLen/2
-	print "Section",n,", Pattern number",CurrentOrder, ":",CurrentPattern," legth:",TotalLength
-	TotalLength=0
+	
+	if CurrentOrder in S2usedpatterns:
+		print "Current Order is",CurrentOrder," and it has already been compiled, adding its address to the address list"
+		OrderIndex=S2usedpatterns.index(CurrentOrder)
+		S2addrhighstr=S2usedaddresseshigh[OrderIndex]
+		S2addrlowstr=S2usedaddresseslow[OrderIndex]
+		S2addrhighlist.append(S2addrhighstr)
+		S2addrlowlist.append(S2addrlowstr)
+		
+		print "S2 addr high is:",S2addrhighstr," and S2 addr low is:",S2addrlowstr
 	
 	
-	for i in range(CurrentPatternLen/2):
-		CurrentNoteEng=CurrentPattern[i*2]
-		CurrentDuration=CurrentPattern[i*2+1]
+	
+	if CurrentOrder not in S2usedpatterns:  #Check to see if the pattern has already been compiled
 		
-		if ((CurrentNoteEng != 75) and (CurrentNoteEng != 80)):  #Normal note positions
-			CurrentNotePos=ABCList.index(CurrentNoteEng)
-			ToneLow=ToneLowByte[CurrentNotePos+Square2NoteModifier]
-			ToneHigh=ToneHighByte[CurrentNotePos+Square2NoteModifier]
-			buildstr=bytestr + str(ToneLow) + "; S2 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(ToneHigh) + "; S2 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(CurrentDuration) + "; S2 Duration Data"
-			program_data_out.append(buildstr)
-			
-		if CurrentNoteEng==75:		#Stop Code
-			ToneHigh=0
-			ToneLow=0	
-			buildstr=bytestr + str(ToneLow) + "; S2 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(ToneHigh) + "; S2 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(CurrentDuration) + "; S2 Duration Data"
-			program_data_out.append(buildstr)
-			
-		DataStartAddrDec=DataStartAddrDec+3
-buildstr=bytestr + str(80) + "; S2 End of Song code"
-program_data_out.append(buildstr)
+		print "Current Order is:", CurrentOrder," and it has not yet been compiled.  Compiling..."
+	
+		S2addr=hex(DataStartAddrDec)
+		S2addrhighlist.append("$"+S2addr[2:4])
+		S2addrlowlist.append("$"+S2addr[4:6])
+		buildstr="; S2 Pattern " + str(CurrentOrder)
+		program_data_out.append(buildstr)
 		
-print "Square2 data compiled, starting Square2..."
-print ""	
-
-DataStartAddrDec=DataStartAddrDec+1
-s1addr=hex(DataStartAddrDec)
-s1highstr=s1addr[2:4]
-s1lowstr=s1addr[4:6]
-
-program_data_out.append("; S1 Note Data   ")		
+		print "S2 addr high is:","$"+S2addr[2:4]," and S2 addr low is:","$"+S2addr[4:6]
+		
+		
+		for i in range(CurrentPatternLen/2):
+			CurrentNoteEng=CurrentPattern[i*2]
+			CurrentDuration=CurrentPattern[i*2+1]
 			
+			if ((CurrentNoteEng != 72) and (CurrentNoteEng != 80)):  #Normal note positions
+				CurrentNotePos=ABCList.index(CurrentNoteEng)
+				ToneLow=ToneLowByte[CurrentNotePos+Square2NoteModifier]
+				ToneHigh=ToneHighByte[CurrentNotePos+Square2NoteModifier]
+				#buildstr=bytestr + str(ToneLow) + "," + str(ToneHigh) + "," + str(CurrentDuration) + "; S2 low, high and duration"
+				buildstr=bytestr + str(CurrentNotePos+Square2NoteModifier) + "," + str(CurrentDuration) + "; S3 stop note and duration"
+				program_data_out.append(buildstr)						
+				
+				if CurrentNotePos+Square2NoteModifier<0:
+					print "Square2 offset is too much!  Array underflowed"
+					sys.exit()
+					
+			if CurrentNoteEng==72:		#Stop Code
+				ToneHigh=0
+				ToneLow=0	
+				#buildstr=bytestr + str(ToneLow) + "," + str(ToneHigh) + "," + str(CurrentDuration) + "; S2 low, high and duration"
+				buildstr=bytestr + str(72) + "," + str(CurrentDuration) + "; S2 stop note and duration"
+				program_data_out.append(buildstr)
+				
+			DataStartAddrDec=DataStartAddrDec+2
+		
+		S2usedpatterns.append(CurrentOrder)
+		S2usedaddresseshigh.append("$"+S2addr[2:4])
+		S2usedaddresseslow.append("$"+S2addr[4:6])
+		
+		
+		buildstr=bytestr + str(99) + "; S2 End Pattern Code"
+		program_data_out.append(buildstr)
+		DataStartAddrDec=DataStartAddrDec+1
+		
+	s2Orders.append(CurrentOrder)
+
+print "S2 used patters is:",S2usedpatterns
+print "S2 high list is:",S2addrhighlist
+print "S2 low list is:",S2addrlowlist
+		
+S1usedpatterns=[]
+S1addrhighlist=[]
+S1addrlowlist=[]
+S1usedaddresseshigh=[]
+S1usedaddresseslow=[]
+program_data_out.append("; S1 Note Data   ")	
+	
 for n in range(TotalOrders):
+
 	CurrentOrder=int(TriangleOrder[n], 16)
 	CurrentPattern=TrianglePattern[CurrentOrder]
-	#print "Current Section is ",n,", loading in Pattern number ",CurrentOrder
 	CurrentPatternLen=len(CurrentPattern)
 	
-	for i in range(CurrentPatternLen/2):
-		CurrentNoteEng=CurrentPattern[i*2]
-		CurrentDuration=CurrentPattern[i*2+1]
+	
+	if CurrentOrder in S1usedpatterns:
+		#print "Current Order is",CurrentOrder," and it has already been compiled, adding its address to the address list"
+		OrderIndex=S1usedpatterns.index(CurrentOrder)
+		S1addrhighstr=S1usedaddresseshigh[OrderIndex]
+		S1addrlowstr=S1usedaddresseslow[OrderIndex]
+		S1addrhighlist.append(S1addrhighstr)
+		S1addrlowlist.append(S1addrlowstr)
+	
+	
+	
+	if CurrentOrder not in S1usedpatterns:  #Check to see if the pattern has already been compiled
 		
-		if ((CurrentNoteEng != 75) and (CurrentNoteEng != 80)):  #Normal note positions
-			CurrentNotePos=ABCList.index(CurrentNoteEng)
-			ToneLow=ToneLowByte[CurrentNotePos+TriangleNoteModifier]
-			ToneHigh=ToneHighByte[CurrentNotePos+TriangleNoteModifier]
-			buildstr=bytestr + str(ToneLow) + "; S1 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(ToneHigh) + "; S1 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(CurrentDuration) + "; S1 Duration Data"
-			program_data_out.append(buildstr)
-			
-		if CurrentNoteEng==75:		#Stop Code
-			ToneHigh=0
-			ToneLow=0	
-			buildstr=bytestr + str(ToneLow) + "; S1 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(ToneHigh) + "; S1 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(CurrentDuration) + "; S1 Duration Data"
-			program_data_out.append(buildstr)
-			
-		DataStartAddrDec=DataStartAddrDec+3
+		#print "Current Order is:", CurrentOrder," and it has not yet been compiled.  Compiling..."
+	
+		S1addr=hex(DataStartAddrDec)
+		S1addrhighlist.append("$"+S1addr[2:4])
+		S1addrlowlist.append("$"+S1addr[4:6])
+		buildstr="; S1 Pattern " + str(CurrentOrder)
+		program_data_out.append(buildstr)
 		
-print "Triangle data compiled, starting Noise..."
-print ""	
-
-n4addr=hex(DataStartAddrDec)
-n4highstr=n4addr[2:4]
-n4lowstr=n4addr[4:6]	
-
-program_data_out.append("; N4 Note Data   ")		
+		
+		for i in range(CurrentPatternLen/2):
+			CurrentNoteEng=CurrentPattern[i*2]
+			CurrentDuration=CurrentPattern[i*2+1]
 			
+			if ((CurrentNoteEng != 72) and (CurrentNoteEng != 80)):  #Normal note positions
+				CurrentNotePos=ABCList.index(CurrentNoteEng)
+				ToneLow=ToneLowByte[CurrentNotePos+TriangleNoteModifier]
+				ToneHigh=ToneHighByte[CurrentNotePos+TriangleNoteModifier]
+				#buildstr=bytestr + str(ToneLow) + "," + str(ToneHigh) + "," + str(CurrentDuration) + "; S1 low, high and duration"
+				buildstr=bytestr + str(CurrentNotePos+TriangleNoteModifier) + "," + str(CurrentDuration) + "; S1 note and duration"
+				program_data_out.append(buildstr)						
+				
+				if CurrentNotePos+TriangleNoteModifier<0:
+					print "Triangle offset is too much!  Array underflowed"
+					sys.exit()
+					
+			if CurrentNoteEng==72:		#Stop Code
+				ToneHigh=0
+				ToneLow=0	
+				#buildstr=bytestr + str(ToneLow) + "," + str(ToneHigh) + "," + str(CurrentDuration) + "; S1 low, high and duration"
+				buildstr=bytestr + str(72) + "," + str(CurrentDuration) + "; S1 stop note and duration"
+				program_data_out.append(buildstr)
+				
+			DataStartAddrDec=DataStartAddrDec+2
+		
+		S1usedpatterns.append(CurrentOrder)
+		S1usedaddresseshigh.append("$"+S1addr[2:4])
+		S1usedaddresseslow.append("$"+S1addr[4:6])
+		
+		
+		
+	s1Orders.append(CurrentOrder)
+		
+N4usedpatterns=[]
+N4addrhighlist=[]
+N4addrlowlist=[]
+N4usedaddresseshigh=[]
+N4usedaddresseslow=[]
+
+program_data_out.append("; N4 Note Data   ")	
+	
 for n in range(TotalOrders):
+
 	CurrentOrder=int(NoiseOrder[n], 16)
 	CurrentPattern=NoisePattern[CurrentOrder]
-	#print "Current Section is ",n,", loading in Pattern number ",CurrentOrder
 	CurrentPatternLen=len(CurrentPattern)
-	#print "CurrentPatternLen is ",CurrentPatternLen
-	for i in range(CurrentPatternLen/2):
-		CurrentNoteEng=CurrentPattern[i*2]
-		CurrentDuration=CurrentPattern[i*2+1]
-		print "CurrentNoteEng for Noise is",CurrentNoteEng," and duration is ",CurrentDuration
+	
+	
+	if CurrentOrder in N4usedpatterns:
+		#print "Current Order is",CurrentOrder," and it has already been compiled, adding its address to the address list"
+		OrderIndex=N4usedpatterns.index(CurrentOrder)
+		N4addrhighstr=N4usedaddresseshigh[OrderIndex]
+		N4addrlowstr=N4usedaddresseslow[OrderIndex]
+		N4addrhighlist.append(N4addrhighstr)
+		N4addrlowlist.append(N4addrlowstr)
+	
+	
+	
+	if CurrentOrder not in N4usedpatterns:  #Check to see if the pattern has already been compiled
 		
-		if ((CurrentNoteEng != 75) and (CurrentNoteEng != 80)):  #Normal note positions
-			CurrentNotePos=PercList.index(CurrentNoteEng)
-			Tone=CurrentNotePos*6+128
-			buildstr=bytestr + str(Tone) + "; N4 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(CurrentDuration) + "; N4 Duration Data"
-			program_data_out.append(buildstr)
+		#print "Current Order is:", CurrentOrder," and it has not yet been compiled.  Compiling..."
+	
+		N4addr=hex(DataStartAddrDec)
+		N4addrhighlist.append("$"+N4addr[2:4])
+		N4addrlowlist.append("$"+N4addr[4:6])
+		buildstr="; N4 Pattern " + str(CurrentOrder)
+		program_data_out.append(buildstr)
+		
+		
+		for i in range(CurrentPatternLen/2):
+			CurrentNoteEng=CurrentPattern[i*2]
+			CurrentDuration=CurrentPattern[i*2+1]
 			
-		if CurrentNoteEng==75:		#Stop Code
-			Tone=0	
-			buildstr=bytestr + str(Tone) + "; N4 Low Byte Data"
-			program_data_out.append(buildstr)
-			buildstr=bytestr + str(CurrentDuration) + "; N4 Duration Data"
-			program_data_out.append(buildstr)
-print "Noise data compiled!  All done!"
-print ""	
-	
-print "Noise Pattern 1 is ",NoisePattern[1]
+			if ((CurrentNoteEng != 72) and (CurrentNoteEng != 80)):  #Normal note positions
+				CurrentNotePos=PercList.index(CurrentNoteEng)
+				Tone=CurrentNotePos*6+128
+				buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 low and duration"
+				program_data_out.append(buildstr)
+				
+			if CurrentNoteEng==72:		#Stop Code
+				Tone=0	
+				buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 low and duration"
+				program_data_out.append(buildstr)
+					
+			DataStartAddrDec=DataStartAddrDec+2
+		
+		N4usedpatterns.append(CurrentOrder)
+		
+		
+		
 
-if SwapS2S3==0:
-	address_header_out.append("s3addrhighconst     byte $" + s3highstr)
-	address_header_out.append("s3addrlowconst     byte $" + s3lowstr)
-	address_header_out.append("s2addrhighconst     byte $" + s2highstr)
-	address_header_out.append("s2addrlowconst     byte $" + s2lowstr)
-	
-if SwapS2S3==1:
-	address_header_out.append("s3addrhighconst     byte $" + s2highstr)
-	address_header_out.append("s3addrlowconst     byte $" + s2lowstr)
-	address_header_out.append("s2addrhighconst     byte $" + s3highstr)
-	address_header_out.append("s2addrlowconst     byte $" + s3lowstr)
+	n4Orders.append(CurrentOrder)
+	N4usedaddresseshigh.append("$"+N4addr[2:4])
+	N4usedaddresseslow.append("$"+N4addr[4:6])
 
-address_header_out.append("s1addrhighconst     byte $" + s1highstr)
-address_header_out.append("s1addrlowconst     byte $" + s1lowstr)
-address_header_out.append("n4addrhighconst     byte $" + n4highstr)
-address_header_out.append("n4addrlowconst     byte $" + n4lowstr)
-address_header_out.append("")
+address_header_out.append("SwapS2S3        byte " + str(SwapS2S3))
+
+s3addrhighliststr=str(s3addrhighlist)
+s3addrhighliststr=s3addrhighliststr.replace("[","")
+s3addrhighliststr=s3addrhighliststr.replace("]","")
+s3addrhighliststr=s3addrhighliststr.replace("'","")
+s3addrhighliststr="S3addrhighlist	" + bytestr + s3addrhighliststr
+s3addrlowliststr=str(s3addrlowlist)
+s3addrlowliststr=s3addrlowliststr.replace("[","")
+s3addrlowliststr=s3addrlowliststr.replace("]","")
+s3addrlowliststr=s3addrlowliststr.replace("'","")
+s3addrlowliststr="S3addrlowlist	" + bytestr + s3addrlowliststr
+S2addrhighliststr=str(S2addrhighlist)
+S2addrhighliststr=S2addrhighliststr.replace("[","")
+S2addrhighliststr=S2addrhighliststr.replace("]","")
+S2addrhighliststr=S2addrhighliststr.replace("'","")
+S2addrhighliststr="S2addrhighlist	" + bytestr + S2addrhighliststr
+S2addrlowliststr=str(S2addrlowlist)
+S2addrlowliststr=S2addrlowliststr.replace("[","")
+S2addrlowliststr=S2addrlowliststr.replace("]","")
+S2addrlowliststr=S2addrlowliststr.replace("'","")
+S2addrlowliststr="S2addrlowlist	" + bytestr + S2addrlowliststr
+
+
+
+S1addrhighliststr=str(S1addrhighlist)
+S1addrhighliststr=S1addrhighliststr.replace("[","")
+S1addrhighliststr=S1addrhighliststr.replace("]","")
+S1addrhighliststr=S1addrhighliststr.replace("'","")
+S1addrhighliststr="S1addrhighlist	" + bytestr + S1addrhighliststr
+S1addrlowliststr=str(S1addrlowlist)
+S1addrlowliststr=S1addrlowliststr.replace("[","")
+S1addrlowliststr=S1addrlowliststr.replace("]","")
+S1addrlowliststr=S1addrlowliststr.replace("'","")
+S1addrlowliststr="S1addrlowlist	" + bytestr + S1addrlowliststr
+N4addrhighliststr=str(N4addrhighlist)
+N4addrhighliststr=N4addrhighliststr.replace("[","")
+N4addrhighliststr=N4addrhighliststr.replace("]","")
+N4addrhighliststr=N4addrhighliststr.replace("'","")
+N4addrhighliststr="N4addrhighlist	" + bytestr + N4addrhighliststr
+N4addrlowliststr=str(N4addrlowlist)
+N4addrlowliststr=N4addrlowliststr.replace("[","")
+N4addrlowliststr=N4addrlowliststr.replace("]","")
+N4addrlowliststr=N4addrlowliststr.replace("'","")
+N4addrlowliststr="N4addrlowlist	" + bytestr + N4addrlowliststr
+
+
+address_header_out.append(s3addrhighliststr)
+address_header_out.append(s3addrlowliststr)
+address_header_out.append(S2addrhighliststr)
+address_header_out.append(S2addrlowliststr)
+address_header_out.append(S1addrhighliststr)
+address_header_out.append(S1addrlowliststr)
+address_header_out.append(N4addrhighliststr)
+address_header_out.append(N4addrlowliststr)
+
 address_header_out.append("*=$"+DataStartAddress)
 address_header_out.append("")
 address_header_out.append("sounddata")
-
-print address_header_out
-
+	
 program_out=[]
 program_out=address_header_out
 program_out=program_out+program_data_out
+
+print "S3 Order List:",s3Orders
+print "S2 Order List:",s2Orders
+print "S1 Order List:",s1Orders
+print "N4 Order List:",n4Orders
 
 			
 with open('program_out.txt', 'w') as f:
 			for item in program_out:
 				print >> f, item
-					
-
+	
 
