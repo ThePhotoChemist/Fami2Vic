@@ -15,10 +15,10 @@ StopNote2="==="
 DataStartAddress="1E90"
 DataStartAddrDec=int(DataStartAddress,16)
 
-SwapS2S3=0
+SwapS2S3=1
 
-Square1NoteModifier=-24
-Square2NoteModifier=-12
+Square1NoteModifier=-12
+Square2NoteModifier=-24
 TriangleNoteModifier=-12
 
 ABCList=["C0","C#0","D0","D#0","E0","F0","F#0","G0","G#0","A0","A#0","B0","C1","C#1","D1","D#1","E1","F1","F#1","G1","G#1","A1","A#1","B1","C2","C#2","D2","D#2","E2","F2","F#2","G2","G#2","A2","A#2","B2","C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4","C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5"]
@@ -145,6 +145,10 @@ Square2LastFrame=0
 TriangleLastFrame=0
 N4LastFrame=0
 
+Square1LastNote=72
+Square2LastNote=72
+TriangleLastNote=72
+
 Square1EndedOnD00=0
 Square2EndedOnD00=0
 TriangleEndedOnD00=0
@@ -183,7 +187,7 @@ for n in range(TotalPatterns):
 		if Square1EndedOnD00==0:
 		
 			if i==0 and Square1CurString==BlankLine:  #Set as "Stop Note" if no data on the first line
-				Square1Pattern[n].append(72)			#Code 72 is the "stop" note
+				Square1Pattern[n].append(Square1LastNote)			#Code 72 is the "stop" note
 				Square1LastFrame=i
 				
 			if Square1CurString!=BlankLine:
@@ -196,6 +200,8 @@ for n in range(TotalPatterns):
 					Square1Pattern[n].append(Square1Note)
 					Square1LastFrame=i
 					
+					Square1LastNote=Square1Note
+					
 				if Square1Note==StopNote1 or Square1Note==StopNote2:
 					if i>0:
 						Square1NoteDuration=i-Square1LastFrame
@@ -206,7 +212,7 @@ for n in range(TotalPatterns):
 	###### Calculate Square2 Data ######
 		if Square2EndedOnD00==0:
 			if i==0 and Square2CurString==BlankLine:  #Set as "Stop Note" if no data on the first line
-				Square2Pattern[n].append(72)			#Code 72 is the "stop" note
+				Square2Pattern[n].append(Square2LastNote)			#Code 72 is the "stop" note
 				Square2LastFrame=i
 				
 			if Square2CurString!=BlankLine:
@@ -219,6 +225,8 @@ for n in range(TotalPatterns):
 					Square2Pattern[n].append(Square2Note)
 					Square2LastFrame=i
 					
+					Square2LastNote=Square2Note
+					
 				if Square2Note==StopNote1 or Square2Note==StopNote2:
 					if i>0:
 						Square2NoteDuration=i-Square2LastFrame
@@ -229,7 +237,7 @@ for n in range(TotalPatterns):
 	###### Calculate Triangle Data ######		
 		if TriangleEndedOnD00==0:
 			if i==0 and TriangleCurString==BlankLine:  #Set as "Stop Note" if no data on the first line
-				TrianglePattern[n].append(72)			#Code 72 is the "stop" note
+				TrianglePattern[n].append(TriangleLastNote)			#Code 72 is the "stop" note
 				TriangleLastFrame=i
 				
 			if TriangleCurString!=BlankLine:
@@ -241,6 +249,8 @@ for n in range(TotalPatterns):
 						TrianglePattern[n].append(TriangleNoteDuration+DurationModifier)
 					TrianglePattern[n].append(TriangleNote)
 					TriangleLastFrame=i
+					
+					TriangleLastNote=TriangleNote
 					
 				if (TriangleNote==StopNote1) or (TriangleNote==StopNote2):
 					if i>0:
@@ -410,6 +420,8 @@ for n in range(TotalOrders):
 		buildstr=bytestr + str(99) + "; S3 End Pattern Code"
 		program_data_out.append(buildstr)
 		DataStartAddrDec=DataStartAddrDec+1
+		
+		
 		
 	s3Orders.append(CurrentOrder)
 	
