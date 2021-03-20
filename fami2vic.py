@@ -25,6 +25,10 @@ VolumeCutoff=-1
 
 IgnoreUnderflowErrors=1
 
+TriangleMutedNotes=0
+Square2MutedNotes=0
+Square1MutedNotes=0
+
 ABCList=["C0","C#0","D0","D#0","E0","F0","F#0","G0","G#0","A0","A#0","B0","C1","C#1","D1","D#1","E1","F1","F#1","G1","G#1","A1","A#1","B1","C2","C#2","D2","D#2","E2","F2","F#2","G2","G#2","A2","A#2","B2","C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4","C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5","C6","C#6","D6","D#6","E6","F6","F#6","G6","G#6","A6","A#6","B6"]
 PercList=["0#","1#","2#","3#","4#","5#","6#","7#","8#","9#","A#","B#","C#","D#","E#","F#"]
 
@@ -161,6 +165,13 @@ Square1EndedOnD00=0
 Square2EndedOnD00=0
 TriangleEndedOnD00=0
 NoiseEndedOnD00=0
+
+Square1Highest=0
+Square1Lowest=72
+Square2Highest=0
+Square2Lowest=72
+TriangleHighest=0
+TriangleLowest=72
 
 S1Duration=0
 S2Duration=0
@@ -332,6 +343,7 @@ for n in range(TotalPatterns):
 			NoiseNoteDuration=i-NoiseLastFrame
 			NoisePattern[n].append(NoiseNoteDuration)
 			
+			
 
 	Square1NoteDuration=RowsPerPattern-Square1LastFrame
 	Square1Pattern[n].append(Square1NoteDuration+DurationModifier)
@@ -431,8 +443,14 @@ for n in range(TotalOrders):
 						sys.exit()
 					else:
 						buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S3 note and duration"
+						Square1MutedNotes=1
 						
-				program_data_out.append(buildstr)				
+				program_data_out.append(buildstr)
+
+				if CurrentNotePos>Square1Highest:
+					Square1Highest=CurrentNotePos
+				if CurrentNotePos<Square1Lowest:
+					Square1Lowest=CurrentNotePos
 					
 			if CurrentNoteEng==73:		#Stop Code
 				ToneHigh=0
@@ -510,8 +528,19 @@ for n in range(TotalOrders):
 				program_data_out.append(buildstr)						
 				
 				if CurrentNotePos+Square2NoteModifier<0:
-					print "Square2 offset is too much!  Array underflowed. Value=", str(CurrentNotePos+Square2NoteModifier)
-					sys.exit()
+					print "Square2 offset is too much!  Array underflowed.  Value=", str(CurrentNotePos+Square2NoteModifier)
+					
+					if IgnoreUnderflowErrors==0:
+						sys.exit()
+					else:
+						buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S2 note and duration"
+						Square2MutedNotes=0
+					
+					
+				if CurrentNotePos>Square2Highest:
+					Square2Highest=CurrentNotePos
+				if CurrentNotePos<Square2Lowest:
+					Square2Lowest=CurrentNotePos
 					
 			if CurrentNoteEng==73:		#Stop Code
 				ToneHigh=0
@@ -585,8 +614,18 @@ for n in range(TotalOrders):
 				program_data_out.append(buildstr)						
 				
 				if CurrentNotePos+TriangleNoteModifier<0:
-					print "Triangle offset is too much!  Array underflowed. Value=", str(CurrentNotePos+TriangleNoteModifier)
-					sys.exit()
+					print "Triangle offset is too much!  Array underflowed.  Value=", str(CurrentNotePos+TriangleNoteModifier)
+					
+					if IgnoreUnderflowErrors==0:
+						sys.exit()
+					else:
+						buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S2 note and duration"
+						TriangleMutedNotes=1
+					
+				if CurrentNotePos>TriangleHighest:
+					TriangleHighest=CurrentNotePos
+				if CurrentNotePos<TriangleLowest:
+					TriangleLowest=CurrentNotePos
 					
 			if CurrentNoteEng==73:		#Stop Code
 				ToneHigh=0
@@ -735,6 +774,17 @@ print "S3 Order List:",s3Orders
 print "S2 Order List:",s2Orders
 print "S1 Order List:",s1Orders
 print "N4 Order List:",n4Orders
+
+print "Square1 Range:", Square1Lowest, ":", Square1Highest
+print "Square2 Range:", Square2Lowest, ":", Square2Highest
+print "Triangle Range:", TriangleLowest, ":", TriangleHighest
+
+if Square1MutedNotes:
+	print "Offset on Square1 caused some lower notes to be muted"
+if Square2MutedNotes:
+	print "Offset on Square2 caused some lower notes to be muted"
+if TriangleMutedNotes:
+	print "Offset on Triangle caused some lower notes to be muted"
 
 			
 with open('program_out.txt', 'w') as f:
