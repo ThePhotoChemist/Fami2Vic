@@ -12,23 +12,27 @@ BlankLine="..."
 StopNote1="---"
 StopNote2="==="
 
-DataStartAddress="1E90"
+DataStartAddress="2110"
 DataStartAddrDec=int(DataStartAddress,16)
 
-SwapS2S3=1
+SwapS2S3=0
 
-Square1NoteModifier=-12
-Square2NoteModifier=-24
+Square1NoteModifier=-24
+Square2NoteModifier=-12
 TriangleNoteModifier=-12
 
-ABCList=["C0","C#0","D0","D#0","E0","F0","F#0","G0","G#0","A0","A#0","B0","C1","C#1","D1","D#1","E1","F1","F#1","G1","G#1","A1","A#1","B1","C2","C#2","D2","D#2","E2","F2","F#2","G2","G#2","A2","A#2","B2","C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4","C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5"]
+VolumeCutoff=-1
+
+IgnoreUnderflowErrors=1
+
+ABCList=["C0","C#0","D0","D#0","E0","F0","F#0","G0","G#0","A0","A#0","B0","C1","C#1","D1","D#1","E1","F1","F#1","G1","G#1","A1","A#1","B1","C2","C#2","D2","D#2","E2","F2","F#2","G2","G#2","A2","A#2","B2","C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4","C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5","C6","C#6","D6","D#6","E6","F6","F#6","G6","G#6","A6","A#6","B6"]
 PercList=["0#","1#","2#","3#","4#","5#","6#","7#","8#","9#","A#","B#","C#","D#","E#","F#"]
 
 
 
 ToneLowByte=[132,139,146,152,158,163,168,173,178,182,186,190,193,197,200,203,206,209,211,214,216,218,220,222,224,226,227,229,230,232,233,234,235,236,237,238,239,240,241,242,242,243,244,244,245,245,246,246,247,247,248,248,249,249,249,249,250,250,250,251,251,251,251,251,252,252,252,252,252,252,252,253]
 ToneHighByte=[7,6,1,2,0,4,5,4,0,3,4,2,7,3,5,5,4,2,6,2,4,5,6,5,4,1,6,3,6,1,3,5,6,7,7,7,6,5,3,1,7,4,2,6,3,7,3,7,3,6,2,5,0,2,5,7,2,4,6,0,1,3,5,6,0,1,2,4,5,6,7,0]
-PercTone=[135,147,151,159,163,167,172,179,183,187,191,195,199,201,203,207,209,212,215,217,219,221,223,225,227,228,229,231,232,233,235,236,237,238,239,240,241]
+PercTone=[135,147,151,159,163,167,173,179,183,187,191,195,199,201,203,207,209,212,215,217,219,221,223,225,227,228,229,231,232,233,235,236,237,238,239,240,241]
 
 DurationModifier=-1
 
@@ -145,9 +149,13 @@ Square2LastFrame=0
 TriangleLastFrame=0
 N4LastFrame=0
 
-Square1LastNote=72
-Square2LastNote=72
-TriangleLastNote=72
+Square1Mute=0
+Square2Mute=0
+TriangleMute=0
+
+Square1LastNote=73
+Square2LastNote=73
+TriangleLastNote=73
 
 Square1EndedOnD00=0
 Square2EndedOnD00=0
@@ -167,18 +175,26 @@ NoisePattern=[[] for _ in range(TotalPatterns)]
 print "Now let's start extracting pattern data"
 
 for n in range(TotalPatterns):
+
+
+	
 	for i in range(RowsPerPattern):
+
 
 		CurRowString=Lines[n*PatternSize+DataStartRow+i+2]
 		
 		Square1CurString=CurRowString[Square1ColumnStart:Square1ColumnStart+3]
 		Square1Cmd=CurRowString[Square1ColumnStart+9:Square1ColumnStart+12]
+		Square1Vol=CurRowString[Square1ColumnStart+7:Square1ColumnStart+8]
+		
 		
 		Square2CurString=CurRowString[Square2ColumnStart:Square2ColumnStart+3]
 		Square2Cmd=CurRowString[Square2ColumnStart+9:Square2ColumnStart+12]
+		Square2Vol=CurRowString[Square2ColumnStart+7:Square2ColumnStart+8]
 		
 		TriangleCurString=CurRowString[TriangleColumnStart:TriangleColumnStart+3]
 		TriangleCmd=CurRowString[TriangleColumnStart+9:TriangleColumnStart+12]
+		TriangleVol=CurRowString[TriangleColumnStart+7:TriangleColumnStart+8]
 		
 		NoiseCurString=CurRowString[NoiseColumnStart:NoiseColumnStart+3]
 		NoiseCmd=CurRowString[NoiseColumnStart+9:NoiseColumnStart+12]
@@ -187,7 +203,7 @@ for n in range(TotalPatterns):
 		if Square1EndedOnD00==0:
 		
 			if i==0 and Square1CurString==BlankLine:  #Set as "Stop Note" if no data on the first line
-				Square1Pattern[n].append(Square1LastNote)			#Code 72 is the "stop" note
+				Square1Pattern[n].append(Square1LastNote)			#Code 73 is the "stop" note
 				Square1LastFrame=i
 				
 			if Square1CurString!=BlankLine:
@@ -201,18 +217,24 @@ for n in range(TotalPatterns):
 					Square1LastFrame=i
 					
 					Square1LastNote=Square1Note
+
 					
 				if Square1Note==StopNote1 or Square1Note==StopNote2:
 					if i>0:
 						Square1NoteDuration=i-Square1LastFrame
 						Square1Pattern[n].append(Square1NoteDuration+DurationModifier)
-					Square1Pattern[n].append(72)
+					Square1Pattern[n].append(73)
 					Square1LastFrame=i
+					Square1LastNote=73
+					
+
+						
+					
 	
 	###### Calculate Square2 Data ######
 		if Square2EndedOnD00==0:
 			if i==0 and Square2CurString==BlankLine:  #Set as "Stop Note" if no data on the first line
-				Square2Pattern[n].append(Square2LastNote)			#Code 72 is the "stop" note
+				Square2Pattern[n].append(Square2LastNote)			#Code 73 is the "stop" note
 				Square2LastFrame=i
 				
 			if Square2CurString!=BlankLine:
@@ -226,18 +248,21 @@ for n in range(TotalPatterns):
 					Square2LastFrame=i
 					
 					Square2LastNote=Square2Note
+
 					
 				if Square2Note==StopNote1 or Square2Note==StopNote2:
 					if i>0:
 						Square2NoteDuration=i-Square2LastFrame
 						Square2Pattern[n].append(Square2NoteDuration+DurationModifier)
-					Square2Pattern[n].append(72)
-					Square2LastFrame=i				
+					Square2Pattern[n].append(73)
+					Square2LastFrame=i	
+					Square2LastNote=73
+
 
 	###### Calculate Triangle Data ######		
 		if TriangleEndedOnD00==0:
 			if i==0 and TriangleCurString==BlankLine:  #Set as "Stop Note" if no data on the first line
-				TrianglePattern[n].append(TriangleLastNote)			#Code 72 is the "stop" note
+				TrianglePattern[n].append(TriangleLastNote)			#Code 73 is the "stop" note
 				TriangleLastFrame=i
 				
 			if TriangleCurString!=BlankLine:
@@ -256,13 +281,14 @@ for n in range(TotalPatterns):
 					if i>0:
 						TriangleNoteDuration=i-TriangleLastFrame
 						TrianglePattern[n].append(TriangleNoteDuration+DurationModifier)
-					TrianglePattern[n].append(72)
+					TrianglePattern[n].append(73)
+					TriangleLastNote=73
 					TriangleLastFrame=i
 				
 	###### Calculate Noise Data ######		
 		if NoiseEndedOnD00==0:
 			if i==0 and NoiseCurString==BlankLine:  #Set as "Stop Note" if no data on the first line
-				NoisePattern[n].append(72)			#Code 72 is the "stop" note
+				NoisePattern[n].append(73)			#Code 73 is the "stop" note
 				NoiseLastFrame=i
 				
 			if NoiseCurString!=BlankLine:
@@ -281,7 +307,7 @@ for n in range(TotalPatterns):
 					if i>0:
 						NoiseNoteDuration=i-NoiseLastFrame
 						NoisePattern[n].append(NoiseNoteDuration+DurationModifier)
-					NoisePattern[n].append(72)
+					NoisePattern[n].append(73)
 					NoiseLastFrame=i
 		
 		if Square1Cmd=="D00":
@@ -391,23 +417,28 @@ for n in range(TotalOrders):
 			CurrentNoteEng=CurrentPattern[i*2]
 			CurrentDuration=CurrentPattern[i*2+1]
 			
-			if ((CurrentNoteEng != 72) and (CurrentNoteEng != 80)):  #Normal note positions
+			if ((CurrentNoteEng != 73) and (CurrentNoteEng != 80)):  #Normal note positions
 				CurrentNotePos=ABCList.index(CurrentNoteEng)
 				ToneLow=ToneLowByte[CurrentNotePos+Square1NoteModifier]
 				ToneHigh=ToneHighByte[CurrentNotePos+Square1NoteModifier]
-				#buildstr=bytestr + str(ToneLow) + "," + str(ToneHigh) + "," + str(CurrentDuration) + "; S3 low, high and duration"
 				buildstr=bytestr + str(CurrentNotePos+Square1NoteModifier) + "," + str(CurrentDuration) + "; S3 note and duration"
-				program_data_out.append(buildstr)						
+										
 				
 				if CurrentNotePos+Square1NoteModifier<0:
-					print "Square1 offset is too much!  Array underflowed"
-					sys.exit()
+					print "Square1 offset is too much!  Array underflowed.  Value=", str(CurrentNotePos+Square1NoteModifier)
 					
-			if CurrentNoteEng==72:		#Stop Code
+					if IgnoreUnderflowErrors==0:
+						sys.exit()
+					else:
+						buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S3 note and duration"
+						
+				program_data_out.append(buildstr)				
+					
+			if CurrentNoteEng==73:		#Stop Code
 				ToneHigh=0
 				ToneLow=0	
 				#buildstr=bytestr + str(ToneLow) + "," + str(ToneHigh) + "," + str(CurrentDuration) + "; S3 low, high and duration"
-				buildstr=bytestr + str(72) + "," + str(CurrentDuration) + "; S3 note and duration"
+				buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S3 note and duration"
 				program_data_out.append(buildstr)
 				
 			DataStartAddrDec=DataStartAddrDec+2
@@ -470,7 +501,7 @@ for n in range(TotalOrders):
 			CurrentNoteEng=CurrentPattern[i*2]
 			CurrentDuration=CurrentPattern[i*2+1]
 			
-			if ((CurrentNoteEng != 72) and (CurrentNoteEng != 80)):  #Normal note positions
+			if ((CurrentNoteEng != 73) and (CurrentNoteEng != 80)):  #Normal note positions
 				CurrentNotePos=ABCList.index(CurrentNoteEng)
 				ToneLow=ToneLowByte[CurrentNotePos+Square2NoteModifier]
 				ToneHigh=ToneHighByte[CurrentNotePos+Square2NoteModifier]
@@ -479,14 +510,14 @@ for n in range(TotalOrders):
 				program_data_out.append(buildstr)						
 				
 				if CurrentNotePos+Square2NoteModifier<0:
-					print "Square2 offset is too much!  Array underflowed"
+					print "Square2 offset is too much!  Array underflowed. Value=", str(CurrentNotePos+Square2NoteModifier)
 					sys.exit()
 					
-			if CurrentNoteEng==72:		#Stop Code
+			if CurrentNoteEng==73:		#Stop Code
 				ToneHigh=0
 				ToneLow=0	
 				#buildstr=bytestr + str(ToneLow) + "," + str(ToneHigh) + "," + str(CurrentDuration) + "; S2 low, high and duration"
-				buildstr=bytestr + str(72) + "," + str(CurrentDuration) + "; S2 stop note and duration"
+				buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S2 stop note and duration"
 				program_data_out.append(buildstr)
 				
 			DataStartAddrDec=DataStartAddrDec+2
@@ -545,7 +576,7 @@ for n in range(TotalOrders):
 			CurrentNoteEng=CurrentPattern[i*2]
 			CurrentDuration=CurrentPattern[i*2+1]
 			
-			if ((CurrentNoteEng != 72) and (CurrentNoteEng != 80)):  #Normal note positions
+			if ((CurrentNoteEng != 73) and (CurrentNoteEng != 80)):  #Normal note positions
 				CurrentNotePos=ABCList.index(CurrentNoteEng)
 				ToneLow=ToneLowByte[CurrentNotePos+TriangleNoteModifier]
 				ToneHigh=ToneHighByte[CurrentNotePos+TriangleNoteModifier]
@@ -554,14 +585,14 @@ for n in range(TotalOrders):
 				program_data_out.append(buildstr)						
 				
 				if CurrentNotePos+TriangleNoteModifier<0:
-					print "Triangle offset is too much!  Array underflowed"
+					print "Triangle offset is too much!  Array underflowed. Value=", str(CurrentNotePos+TriangleNoteModifier)
 					sys.exit()
 					
-			if CurrentNoteEng==72:		#Stop Code
+			if CurrentNoteEng==73:		#Stop Code
 				ToneHigh=0
 				ToneLow=0	
 				#buildstr=bytestr + str(ToneLow) + "," + str(ToneHigh) + "," + str(CurrentDuration) + "; S1 low, high and duration"
-				buildstr=bytestr + str(72) + "," + str(CurrentDuration) + "; S1 stop note and duration"
+				buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S1 stop note and duration"
 				program_data_out.append(buildstr)
 				
 			DataStartAddrDec=DataStartAddrDec+2
@@ -614,13 +645,13 @@ for n in range(TotalOrders):
 			CurrentNoteEng=CurrentPattern[i*2]
 			CurrentDuration=CurrentPattern[i*2+1]
 			
-			if ((CurrentNoteEng != 72) and (CurrentNoteEng != 80)):  #Normal note positions
+			if ((CurrentNoteEng != 73) and (CurrentNoteEng != 80)):  #Normal note positions
 				CurrentNotePos=PercList.index(CurrentNoteEng)
 				Tone=CurrentNotePos*6+128
 				buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 low and duration"
 				program_data_out.append(buildstr)
 				
-			if CurrentNoteEng==72:		#Stop Code
+			if CurrentNoteEng==73:		#Stop Code
 				Tone=0	
 				buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 low and duration"
 				program_data_out.append(buildstr)
