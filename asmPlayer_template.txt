@@ -51,6 +51,18 @@ defm    PrintHex ; print hex value to a screen location
 start   
         LDA numloopsconst
         STA numloops
+
+        LDA 60900
+        CMP #12 ; 5=NTSC, 12=PAL
+        BEQ LoadPALSpeed
+        LDA NTSCSpeed
+        STA Tempo
+        JMP AfterTempo
+LoadPALSpeed
+        LDA PALSpeed
+        STA Tempo
+
+AfterTempo
         LDX #0
 
 load10bitofr
@@ -88,46 +100,10 @@ loopstart
         STA s3request
         STA s2request
         STA s1request
-        STA n4request
-
-        mPrint 19  ;home
-        mPrint 13  ;return
-        mPrint 83  ;S
-        mPrint 49  ;1
-        mPrint 61  ;=
-        mPrint 32  ;space
-        mPrint 32  ;space
-        mPrint 46  ;.
-        mPrint 32  ;space
-        mPrint 32  ;space
-        mPrint 13  ;return
-        mPrint 83  ;S
-        mPrint 50  ;2
-        mPrint 61  ;=
-        mPrint 32  ;space
-        mPrint 32  ;space
-        mPrint 46  ;.
-        mPrint 32  ;space
-        mPrint 32  ;space
-        mPrint 13  ;return
-        mPrint 83  ;S
-        mPrint 51  ;3
-        mPrint 61  ;=
-        mPrint 32  ;space
-        mPrint 32  ;space
-        mPrint 46  ;.
-        mPrint 32  ;space
-        mPrint 32  ;space
-        mPrint 13  ;return
-        mPrint 78  ;N
-        mPrint 52  ;4
-        mPrint 61  ;=
-        mPrint 32  ;space
-        mPrint 32  ;space
-
-        ;mPrint 147
+        STA n4request        
 
         LDX #0
+        JSR hprint
         
         
         
@@ -202,9 +178,9 @@ newpatternreq
 
 skipnewpatternreq
         TAX
-        LDA ToneLowByte,x
+        JSR LoadToneLow
         STA s3tonelow
-        LDA ToneHighByte,x
+        JSR LoadToneHigh
         STA s3tonehigh
         LDX #0
 
@@ -272,9 +248,9 @@ s2requestnote
         LDA ($AC,x) ;load in s2 note
 
         TAX
-        LDA ToneLowByte,x
+        JSR LoadToneLow
         STA s2tonelow
-        LDA ToneHighByte,x
+        JSR LoadToneHigh
         STA s2tonehigh
         LDX #0
 
@@ -331,9 +307,9 @@ s1requestnote
         LDA ($AC,x) ;load in s1 note
 
         TAX
-        LDA ToneLowByte,x
+        JSR LoadToneLow
         STA s1tonelow
-        LDA ToneHighByte,x
+        JSR LoadToneHigh
         STA s1tonehigh
         LDX #0
 
@@ -479,7 +455,14 @@ afterswap
 
         LDA n4tonelow
         STA N4
+        STA 37891
         STA 4099
+
+
+        ;LDA 36879
+        ;AND 78
+        ;ORA S32
+        ;STA 36879
 
 ; ---------- sound delay loop --------- ;
       
@@ -504,7 +487,7 @@ pwmoff
       LDA #0
       ;LDA n4tonelow
       STA n4
-      STA pwmval
+      STA pwmval 
       JMP pwmdone
 
 pwmon 
@@ -516,7 +499,11 @@ pwmon
 pwmdone
        
         LDA sounddelaylowbyte
-        CMP #70
+
+        CMP Tempo
+
+
+
         BEQ sounddelayhigh
         INC sounddelaylowbyte
         JMP sounddelaylow
@@ -543,6 +530,10 @@ displayinfo
 
         LDA n4tonelow
         PrintHex 4209,4210
+
+        LDA patterncounter
+        PrintHex 4231,4232
+
 
         LDA #0
         STA sounddelaylowbyte
@@ -641,13 +632,15 @@ n4newnote
 ; Change frame state every 40 loops ;        
 frameinc
         LDA framecount
-        CMP #149
+        CMP #56
         BEQ frametest
         INC framecount
         JMP soundloop
 
 frametest
         
+       ;JMP fadeout 
+fadetest
        LDA #0
        STA framecount
        LDA framestate        ; if framestate=0 then goto frame0
@@ -683,6 +676,65 @@ exit
         LDA #64
         STA 37150  ; shut down 10-bit-ofr oscillator code, since it stops the VIC from loading new programs
         RTS
+
+LoadToneLow
+        LDA 60900
+        CMP #12 ; 5=NTSC, 12=PAL
+        BEQ LoadToneLowPAL
+        LDA NTSCToneLowByte,x
+        RTS
+LoadToneLowPAL
+        LDA PALToneLowByte,x
+        RTS
+
+LoadToneHigh
+        LDA 60900
+        CMP #12 ; 5=NTSC, 12=PAL
+        BEQ LoadToneHighPAL
+        LDA NTSCToneHighByte,x
+        RTS
+LoadToneHighPAL
+        LDA PALToneHighByte,x
+        RTS
+
+;print header info
+hprint  LDA sstring,X
+        CMP #33
+        BEQ hexit
+        JSR PRINT_CHAR
+        INX
+        JMP hprint
+hexit   LDX #0
+        RTS
+
+
+fadeout
+        LDA patterncounter
+        CMP #53
+        BCS decreasevolume
+        JMP fadetest
+decreasevolume
+        DEC 36878
+        LDA #0
+        CMP 36878
+        BEQ clearloops
+        JMP fadetest
+clearloops
+        LDA #0
+        STA numloops
+        JMP exit
+
+
+        
+
+;print S1=, S2=, S3=, N4=, P=
+sstring byte 147,13,13,83,49,61,32,32,46,32,32,13, 83,50,61,32,32,46,32,32,13, 83,51,61,32,32,46,32,32,13, 78,52,61,32,32,13, 32,80,61,32,32,13,13
+        null 'SHOVEL KNIGHT'
+        byte 13
+        null 'THE APPARITION'
+;terminate string printing routine
+        byte 33
+        
    
         
 
@@ -774,8 +826,17 @@ VOLUME=36878
 
 numloopsconst        byte 0
 
-ToneLowByte     byte 132,139,146,152,158,163,168,173,178,182,186,190,193,197,200,203,206,209,211,214,216,218,220,222,224,226,227,229,230,232,233,234,235,236,237,238,239,240,241,242,242,243,244,244,245,245,246,246,247,247,248,248,249,249,249,249,250,250,250,251,251,251,251,251,252,252,252,252,252,252,252,253,0
-ToneHighByte    byte 7,6,1,2,0,4,5,4,0,3,4,2,7,3,5,5,4,2,6,2,4,5,6,5,4,1,6,3,6,1,3,5,6,7,7,7,6,5,3,1,7,4,2,6,3,7,3,7,3,6,2,5,0,2,5,7,2,4,6,0,1,3,5,6,0,1,2,4,5,6,7,0,0
+Tempo   byte 0
+NTSCSpeed       byte 68
+PALSpeed        byte 73
+
+;PAL Tones
+PALToneLowByte     byte 0,130,137,143,149,155,161,166,171,176,180,184,188,192,196,199,202,205,208,210,213,215,217,220,221,223,225,227,228,230,231,232,234,235,236,237,238,239,240,241,241,242,243,244,244,245,245,246,246,247,247,248,248,248,249,249,249,250,250,250,250,251,251,251,251,251,252,252,252,252,252,252,0,0,0,0,0,0,0,0,0,0,0,0,0
+PALToneHighByte    byte 0,0,1,6,7,7,3,5,5,2,6,7,7,4,0,3,4,3,2,7,2,5,7,0,7,6,4,1,6,2,5,7,1,3,3,4,4,3,2,1,7,5,2,0,5,1,6,2,6,2,5,0,3,6,1,4,6,1,3,5,7,1,3,4,6,7,1,2,3,4,5,6
+
+;NTSC Tones
+NTSCToneLowByte     byte 132,139,146,152,158,163,168,173,178,182,186,190,193,197,200,203,206,209,211,214,216,218,220,222,224,226,227,229,230,232,233,234,235,236,237,238,239,240,241,242,242,243,244,244,245,245,246,246,247,247,248,248,249,249,249,249,250,250,250,251,251,251,251,251,252,252,252,252,252,252,252,253,0,0,0,0,0,0,0,0,0,0,0,0,0
+NTSCToneHighByte    byte 7,6,1,2,0,4,5,4,0,3,4,2,7,3,5,5,4,2,6,2,4,5,6,5,4,1,6,3,6,1,3,5,6,7,7,7,6,5,3,1,7,4,2,6,3,7,3,7,3,6,2,5,0,2,5,7,2,4,6,0,1,3,5,6,0,1,2,4,5,6,7,0,0
 
 10bitofr        byte    169,99,141,24,3,169,3,141,25,3,169,128,141,20,145,133,254,162,5,142,21,145,169
                 byte    0,149,248,202,16,251,169,192,141,30,145,96,72,152,72,138,72,6,254,144,2,230,254
@@ -784,5 +845,3 @@ ToneHighByte    byte 7,6,1,2,0,4,5,4,0,3,4,2,7,3,5,5,4,2,6,2,4,5,6,5,4,1,6,3,6,1
 
 
 ; auto generated script data goes here
-
-
