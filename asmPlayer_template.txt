@@ -484,8 +484,8 @@ pwmcheck
        
 
 pwmoff
-      LDA #0
-      ;LDA n4tonelow
+      ;LDA #0
+      LDA n4tonelow
       STA n4
       STA pwmval 
       JMP pwmdone
@@ -542,7 +542,7 @@ displayinfo
 
 
         LDA sounddelayhighbyte
-        CMP #1
+        CMP SpeedHighByte
         BEQ sounddelayloop
         INC sounddelayhighbyte
         JMP sounddelaylow
@@ -639,7 +639,7 @@ frameinc
 
 frametest
         
-       ;JMP fadeout 
+       JMP fadeout 
 fadetest
        LDA #0
        STA framecount
@@ -710,7 +710,7 @@ hexit   LDX #0
 
 fadeout
         LDA patterncounter
-        CMP #53
+        CMP fadeouttime
         BCS decreasevolume
         JMP fadetest
 decreasevolume
@@ -724,19 +724,6 @@ clearloops
         STA numloops
         JMP exit
 
-
-        
-
-;print S1=, S2=, S3=, N4=, P=
-sstring byte 147,13,13,83,49,61,32,32,46,32,32,13, 83,50,61,32,32,46,32,32,13, 83,51,61,32,32,46,32,32,13, 78,52,61,32,32,13, 32,80,61,32,32,13,13
-        null 'SHOVEL KNIGHT'
-        byte 13
-        null 'THE APPARITION'
-;terminate string printing routine
-        byte 33
-        
-   
-        
 
 PRINT_CHAR = $FFD2
 
@@ -830,6 +817,8 @@ Tempo   byte 0
 NTSCSpeed       byte 68
 PALSpeed        byte 73
 
+SpeedHighByte   byte 1
+
 ;PAL Tones
 PALToneLowByte     byte 0,130,137,143,149,155,161,166,171,176,180,184,188,192,196,199,202,205,208,210,213,215,217,220,221,223,225,227,228,230,231,232,234,235,236,237,238,239,240,241,241,242,243,244,244,245,245,246,246,247,247,248,248,248,249,249,249,250,250,250,250,251,251,251,251,251,252,252,252,252,252,252,0,0,0,0,0,0,0,0,0,0,0,0,0
 PALToneHighByte    byte 0,0,1,6,7,7,3,5,5,2,6,7,7,4,0,3,4,3,2,7,2,5,7,0,7,6,4,1,6,2,5,7,1,3,3,4,4,3,2,1,7,5,2,0,5,1,6,2,6,2,5,0,3,6,1,4,6,1,3,5,7,1,3,4,6,7,1,2,3,4,5,6
@@ -843,5 +832,15 @@ NTSCToneHighByte    byte 7,6,1,2,0,4,5,4,0,3,4,2,7,3,5,5,4,2,6,2,4,5,6,5,4,1,6,3
                 byte    162,2,180,251,185,140,3,180,248,37,254,240,1,200,152,157,10,144,202,16,237,104
                 byte    170,104,168,104,44,20,145,64,0,128,136,146,170,218,238,254
 
+
+;print S1=, S2=, S3=, N4=, P=
+sstring byte 147,13,13,83,49,61,32,32,46,32,32,13, 83,50,61,32,32,46,32,32,13, 83,51,61,32,32,46,32,32,13, 78,52,61,32,32,13, 32,80,61,32,32,13,13
+        null 'SUPER MARIO BROS'
+        byte 13
+        null 'WATER THEME'
+;terminate string printing routine
+        byte 33
+        
+fadeouttime byte 34
 
 ; auto generated script data goes here
