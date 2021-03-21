@@ -653,19 +653,19 @@ for n in range(TotalOrders):
 	
 	
 	if CurrentOrder in N4usedpatterns:
-		print "Current Order is",CurrentOrder," and it has already been compiled, adding its address to the address list"
+		#print "Current Order is",CurrentOrder," and it has already been compiled, adding its address to the address list"
 		OrderIndex=N4usedpatterns.index(CurrentOrder)
 		N4addrhighstr=N4usedaddresseshigh[OrderIndex]
 		N4addrlowstr=N4usedaddresseslow[OrderIndex]
 		N4addrhighlist.append(N4addrhighstr)
 		N4addrlowlist.append(N4addrlowstr)
 		
-		print "Adding addresses $",N4addrhighstr,",",N4addrlowstr
+		#print "Adding addresses $",N4addrhighstr,",",N4addrlowstr
 	
 	
 	if CurrentOrder not in N4usedpatterns:  #Check to see if the pattern has already been compiled
 		
-		print "Current Order is:", CurrentOrder," and it has not yet been compiled.  Compiling..."
+		#print "Current Order is:", CurrentOrder," and it has not yet been compiled.  Compiling..."
 	
 		N4addr=hex(DataStartAddrDec)
 		N4addrhighlist.append("$"+N4addr[2:4])
@@ -700,12 +700,6 @@ for n in range(TotalOrders):
 		N4usedaddresseshigh.append("$"+N4addr[2:4])
 		N4usedaddresseslow.append("$"+N4addr[4:6])
 
-print "N4 Used Patterns"
-print N4usedpatterns
-print "N4 Used addresses High"	
-print N4usedaddresseshigh
-print "N4 Used addresses Low"
-print N4usedaddresseslow
 
 address_header_out.append("SwapS2S3        byte " + str(SwapS2S3))
 
