@@ -398,8 +398,12 @@ program_data_out.append("; S3 Note Data   ")
 
 for n in range(TotalOrders):
 
+	
 	CurrentOrder=int(Square1Order[n], 16)
+	
+	print "Current Order is:",CurrentOrder
 	CurrentPattern=Square1Pattern[CurrentOrder]
+	
 	CurrentPatternLen=len(CurrentPattern)
 	
 	

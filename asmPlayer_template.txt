@@ -835,12 +835,14 @@ NTSCToneHighByte    byte 7,6,1,2,0,4,5,4,0,3,4,2,7,3,5,5,4,2,6,2,4,5,6,5,4,1,6,3
 
 ;print S1=, S2=, S3=, N4=, P=
 sstring byte 147,13,13,83,49,61,32,32,46,32,32,13, 83,50,61,32,32,46,32,32,13, 83,51,61,32,32,46,32,32,13, 78,52,61,32,32,13, 32,80,61,32,32,13,13
-        null 'SUPER MARIO BROS'
+        null 'GAME NAME'
         byte 13
-        null 'WATER THEME'
+        null 'SONG TITLE'
+        ;byte 13
+        ;null 'MORE TEXT IF YOU WANT IT'
 ;terminate string printing routine
         byte 33
         
-fadeouttime byte 34
+fadeouttime byte 255
 
 ; auto generated script data goes here
