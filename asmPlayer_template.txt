@@ -17,11 +17,7 @@ defm    mPrint
         JSR PRINT_CHAR
         endm
 
-defm    incAddr
-        LDA #0
-        STA $AC
-        INC $AD
-        endm
+
 
 defm    PrintValue
                 TAX
@@ -57,10 +53,12 @@ start
         BEQ LoadPALSpeed
         LDA NTSCSpeed
         STA Tempo
+        STA TempoConst
         JMP AfterTempo
 LoadPALSpeed
         LDA PALSpeed
         STA Tempo
+        STA TempoConst
 
 AfterTempo
         LDX #0
@@ -104,6 +102,8 @@ loopstart
 
         LDX #0
         JSR hprint
+        LDA numloops
+        PrintHex 4253,4254
         
         
         
@@ -129,8 +129,6 @@ s3requesthelp
         JMP s3requestnote
 n4requesthelp
         JMP n4requestnote
-
-
         
 ; -------------- S3 Note Request ---------;
 s3requestnote
@@ -192,12 +190,10 @@ skipnewpatternreq
         JMP s3requestdur
 
 exithelp
-        JMP exit
+        JMP incexit
 
-s3inc1
-       LDA #0
-       STA $AC
-       INC $AD    
+s3inc1   
+        JSR incaddr    
 
         
 s3requestdur
@@ -207,14 +203,12 @@ s3requestdur
 
         LDA $AC
         CMP #255
-        BEQ s3inc3
+        BEQ s3inc2
         INC $AC
         JMP s3saveaddr
         
-s3inc3
-       LDA #0
-       STA $AC
-       INC $AD
+s3inc2
+       JSR incaddr
 
 s3saveaddr
         LDA AddrLow
@@ -262,9 +256,7 @@ s2requestnote
         JMP s2requestdur
 
 s2inc1
-       LDA #0
-       STA $AC
-       INC $AD    
+       JSR incaddr   
         
 s2requestdur
 
@@ -273,14 +265,12 @@ s2requestdur
 
         LDA $AC
         CMP #255
-        BEQ s2inc3
+        BEQ s2inc2
         INC $AC
         JMP s2saveaddr
         
-s2inc3
-       LDA #0
-       STA $AC
-       INC $AD
+s2inc2
+       JSR incaddr
 
 s2saveaddr
         LDA AddrLow
@@ -321,9 +311,7 @@ s1requestnote
         JMP s1requestdur
 
 s1inc1
-       LDA #0
-       STA $AC
-       INC $AD    
+       JSR incaddr  
         
 s1requestdur
 
@@ -332,14 +320,12 @@ s1requestdur
 
         LDA $AC
         CMP #255
-        BEQ s1inc3
+        BEQ s1inc2
         INC $AC
         JMP s1saveaddr
         
-s1inc3
-       LDA #0
-       STA $AC
-       INC $AD
+s1inc2
+       JSR incaddr
 
 s1saveaddr
         LDA AddrLow
@@ -477,26 +463,7 @@ sounddelaylowsetup
 
 sounddelaylow
 
-pwmcheck
-       LDA #0
-       CMP pwmval
-       BEQ pwmon
-       
-
-pwmoff
-      ;LDA #0
-      LDA n4tonelow
-      STA n4
-      STA pwmval 
-      JMP pwmdone
-
-pwmon 
-        LDA n4tonelow
-        STA n4
-        LDA #1
-        STA pwmval
-
-pwmdone
+        ;JSR pwmcheck
        
         LDA sounddelaylowbyte
 
@@ -568,12 +535,6 @@ s3newnote
         LDA #1
         STA s3request
 
-        ;LDA 162 ;pull random number
-        ;AND #7  ; remove higher bits that would set background color
-        ;ORA #27  ; set bit to prevent inverted colors
-        ;STA 36879 ;send to color/border register
-
-
 ; ---------- S2 check for new note --------- ;
 s2newnotecheck
         LDA s2loopcount
@@ -595,10 +556,6 @@ s1newnotecheck
         BEQ s1newnote
         INC s1loopcount
         JMP n4mutecheck
-
-; ----- helper for BEQ statements down here that can't reach the top-----;
-returntotop 
-        JMP soundloop
 
 ; ---------- S1 new note found, latch request --------- ;
 s1newnote
@@ -632,9 +589,19 @@ n4newnote
 ; Change frame state every 40 loops ;        
 frameinc
         LDA framecount
-        CMP #56
+        CMP frameinterval
         BEQ frametest
         INC framecount
+
+endofloop
+        LDA 197 ; current key
+        CMP #64
+        BNE keycheck ; check inputs for quitting, skipping next, etc.
+afterkeycheck
+        LDA 197
+        STA keypressold
+        LDA TempoConst
+        STA Tempo
         JMP soundloop
 
 frametest
@@ -646,7 +613,6 @@ fadetest
        LDA framestate        ; if framestate=0 then goto frame0
        CMP #0
        BEQ frame0 
-
 frame1
 
         LDA #0
@@ -659,9 +625,82 @@ frame0
         STA framestate
         JMP soundloop
 
+keycheck
+        CMP #48 ;Q
+        BEQ keyquit
+        CMP #28 ;N
+        BEQ keynext
+        CMP #35 ;B
+        BEQ keyrev
+        CMP #42 ;F       
+        BEQ keyfast
+        CMP #10 ;R
+        BEQ keyback
+        CMP #5 ;+
+        BEQ keyloopup
+        CMP #61 ;-
+        BEQ keyloopdown
+
+        JMP soundloop
+keyquit
+        LDA #99
+        STA CURRENTSONG
+        LDA #0
+        STA numloops
+        JMP exit
+keynext
+        LDA #0
+        STA numloops
+        JMP incexit
+keyrev 
+        LDA #0
+        STA numloops
+        JMP decexit
+keyfast
+        LDA #1
+        STA Tempo
+        JMP soundloop
+keyback
+        LDA keypressold
+        CMP #64
+        BNE afterkeycheckhelp
+        DEC patterncounter
+        JMP afterkeycheck
+keyloopup
+        LDA keypressold
+        CMP #64
+        BNE afterkeycheckhelp
+        INC numloops
+        LDA numloops
+        PrintHex 4253,4254
+        JMP afterkeycheck
+
+keyloopdown
+        LDA keypressold
+        CMP #64
+        BNE afterkeycheckhelp
+        DEC numloops
+        LDA numloops
+        PrintHex 4253,4254
+        JMP afterkeycheck
+
+afterkeycheckhelp
+        JMP afterkeycheck
+
 loophelp
         DEC numloops
-        JMP loopstart
+        LDA numloops
+        DEC CURRENTSONG
+        PrintHex 4253,4254
+        LDA LoopPoint
+        STA patterncounter
+        JMP newpatternreq
+
+decexit
+        DEC CURRENTSONG
+        DEC CURRENTSONG
+incexit
+        INC CURRENTSONG
 
 exit    
         LDA #0
@@ -669,6 +708,7 @@ exit
         BNE loophelp
         STA patterncounter
         STA VOLUME
+        STA HASPLAYED
         LDA #147
         JSR PRINT_CHAR
         LDA #27
@@ -699,7 +739,7 @@ LoadToneHighPAL
 
 ;print header info
 hprint  LDA sstring,X
-        CMP #33
+        CMP #36
         BEQ hexit
         JSR PRINT_CHAR
         INX
@@ -709,20 +749,55 @@ hexit   LDX #0
 
 
 fadeout
+        LDA numloops
+        CMP #0
+        BNE fadetesthelp
         LDA patterncounter
         CMP fadeouttime
         BCS decreasevolume
         JMP fadetest
 decreasevolume
+
         DEC 36878
         LDA #0
         CMP 36878
         BEQ clearloops
         JMP fadetest
+fadetesthelp
+        JMP fadetest
 clearloops
         LDA #0
         STA numloops
-        JMP exit
+        JMP incexit
+
+incaddr
+       LDA #0
+       STA $AC
+       INC $AD
+       RTS
+
+pwmcheck
+       LDA #0
+       CMP pwmval
+       BEQ pwmon
+       
+
+pwmoff
+      ;LDA #0
+      LDA n4tonelow
+      STA n4
+      STA pwmval 
+      JMP pwmdone
+
+pwmon 
+        LDA n4tonelow
+        STA n4
+        LDA #1
+        STA pwmval
+
+pwmdone
+        RTS
+
 
 
 PRINT_CHAR = $FFD2
@@ -734,6 +809,10 @@ S12=251
 S22=252
 S32=253
 N4=36877
+
+CURRENTSONG=828
+HASPLAYED=829
+
 
 AddrLow=$AC
 AddrHigh=$AD
@@ -765,6 +844,7 @@ sounddelayhighbyte  byte 0
 
 framecount     byte 0
 framestate    byte 0
+keypressold     byte 0
 
 totalframecount byte 0
 
@@ -810,12 +890,10 @@ patterncounter  byte 0
 
 VOLUME=36878
 
-
-numloopsconst        byte 0
-
 Tempo   byte 0
-NTSCSpeed       byte 68
-PALSpeed        byte 73
+TempoConst      byte 0
+NTSCSpeed       byte 146 ;64 w/ PWM, 
+PALSpeed        byte 160 ;73
 
 SpeedHighByte   byte 1
 
@@ -833,16 +911,21 @@ NTSCToneHighByte    byte 7,6,1,2,0,4,5,4,0,3,4,2,7,3,5,5,4,2,6,2,4,5,6,5,4,1,6,3
                 byte    170,104,168,104,44,20,145,64,0,128,136,146,170,218,238,254
 
 
-;print S1=, S2=, S3=, N4=, P=
-sstring byte 147,13,13,83,49,61,32,32,46,32,32,13, 83,50,61,32,32,46,32,32,13, 83,51,61,32,32,46,32,32,13, 78,52,61,32,32,13, 32,80,61,32,32,13,13
-        null 'GAME NAME'
+;print S1=, S2=, S3=, N4=, P=, L=
+sstring byte 147,13,13,83,49,61,32,32,46,32,32,13, 83,50,61,32,32,46,32,32,13, 83,51,61,32,32,46,32,32,13, 78,52,61,32,32,13, 32,80,61,32,32,13, 32,76,61,32,32,13,13
+        null 'ARTIST'
         byte 13
         null 'SONG TITLE'
-        ;byte 13
-        ;null 'MORE TEXT IF YOU WANT IT'
+        byte 13
 ;terminate string printing routine
-        byte 33
-        
-fadeouttime byte 255
+        byte 36
+
+frameinterval           byte 48        
+fadeouttime             byte 0
+numloopsconst           byte 3
+
+
 
 ; auto generated script data goes here
+
+
