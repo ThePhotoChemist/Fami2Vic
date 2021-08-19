@@ -52,38 +52,38 @@ if SwapS2S3==0:
 		print "No Square1 Modifier specified, defaulting to -24"
 		Square1NoteModifier=-24
 	else:
-		Square1NoteModifier=args.square1
+		Square1NoteModifier=int(args.square1)
 		
 	if args.square2==None:
 		print "No Square2 Modifier specified, defaulting to -12"
 		Square2NoteModifier=-12
 	else:
-		Square2NoteModifier=args.square2
+		Square2NoteModifier=int(args.square2)
 		
 	if args.triangle==None:
 		print "No Triangle Modifier specified, defaulting to -12"
 		TriangleNoteModifier=-12
 	else:
-		TriangleNoteModifier=args.square2
+		TriangleNoteModifier=int(args.triangle)
 		
 if SwapS2S3==1:
 	if args.square1==None:
-		print "No Square1 Modifier specified, defaulting to -24"
+		print "No Square1 Modifier specified, defaulting to -12"
 		Square1NoteModifier=-12
 	else:
-		Square1NoteModifier=args.square1
+		Square1NoteModifier=int(args.square1)
 		
 	if args.square2==None:
-		print "No Square2 Modifier specified, defaulting to -12"
+		print "No Square2 Modifier specified, defaulting to -24"
 		Square2NoteModifier=-24
 	else:
-		Square2NoteModifier=args.square2
+		Square2NoteModifier=int(args.square2)
 		
 	if args.triangle==None:
 		print "No Triangle Modifier specified, defaulting to -12"
 		TriangleNoteModifier=-12
 	else:
-		TriangleNoteModifier=args.square2
+		TriangleNoteModifier=int(args.triangle)
 		
 if args.datastart==None:
 	print "No data start address specified, using 2110 (HEX)"
@@ -584,9 +584,9 @@ for n in range(TotalOrders):
 						if CorrectUnderflowErrors and ((CurrentNotePos+Square1NoteModifier+12)>=0):
 							print "Adjusting",CurrentNoteEng,"up one octave"
 							Square1NumCorrectedNotes=Square1NumCorrectedNotes+1
-							ToneLow=ToneLowByte[CurrentNotePos+Square1NoteModifier]
-							ToneHigh=ToneHighByte[CurrentNotePos+Square1NoteModifier]
-							buildstr=bytestr + str(CurrentNotePos+Square1NoteModifier) + "," + str(CurrentDuration) + "; S3 note and duration"
+							ToneLow=ToneLowByte[CurrentNotePos+Square1NoteModifier+12]
+							ToneHigh=ToneHighByte[CurrentNotePos+Square1NoteModifier+12]
+							buildstr=bytestr + str(CurrentNotePos+Square1NoteModifier+12) + "," + str(CurrentDuration) + "; S3 note and duration"
 						else:	
 							print "Muting note"
 							Square1NumUnderNotes=Square1NumUnderNotes+1
@@ -697,9 +697,9 @@ for n in range(TotalOrders):
 						if CorrectUnderflowErrors and ((CurrentNotePos+Square2NoteModifier+12)>=0):
 							print "Adjusting",CurrentNoteEng,"up one octave"
 							Square2NumCorrectedNotes=Square2NumCorrectedNotes+1
-							ToneLow=ToneLowByte[CurrentNotePos+Square2NoteModifier]
-							ToneHigh=ToneHighByte[CurrentNotePos+Square2NoteModifier]
-							buildstr=bytestr + str(CurrentNotePos+Square2NoteModifier) + "," + str(CurrentDuration) + "; S2 note and duration"
+							ToneLow=ToneLowByte[CurrentNotePos+Square2NoteModifier+12]
+							ToneHigh=ToneHighByte[CurrentNotePos+Square2NoteModifier+12]
+							buildstr=bytestr + str(CurrentNotePos+Square2NoteModifier+12) + "," + str(CurrentDuration) + "; S2 note and duration"
 						else:	
 							print "Muting note"
 							Square2NumUnderNotes=Square2NumUnderNotes+1
@@ -804,9 +804,9 @@ for n in range(TotalOrders):
 						if CorrectUnderflowErrors and ((CurrentNotePos+TriangleNoteModifier+12)>=0):
 							print "Adjusting",CurrentNoteEng,"up one octave"
 							TriangleNumCorrectedNotes=TriangleNumCorrectedNotes+1
-							ToneLow=ToneLowByte[CurrentNotePos+TriangleNoteModifier]
-							ToneHigh=ToneHighByte[CurrentNotePos+TriangleNoteModifier]
-							buildstr=bytestr + str(CurrentNotePos+TriangleNoteModifier) + "," + str(CurrentDuration) + "; S1 note and duration"
+							ToneLow=ToneLowByte[CurrentNotePos+TriangleNoteModifier+12]
+							ToneHigh=ToneHighByte[CurrentNotePos+TriangleNoteModifier+12]
+							buildstr=bytestr + str(CurrentNotePos+TriangleNoteModifier+12) + "," + str(CurrentDuration) + "; S1 note and duration"
 						else:	
 							print "Muting note"
 							TriangleNumUnderNotes=TriangleNumUnderNotes+1
