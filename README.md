@@ -5,7 +5,7 @@ I just slapped this thing together not too long ago, so the python script will p
 
 To use:
 
-$python fami2vic.py "/path/to/text/file.txt"
+$python fami2vic.py -i /path/to/text/file.txt
 
 The script will spit out ASM source that can be compiled in CBM Studio.  
 
