@@ -174,6 +174,10 @@ newpatternreq
         STA AddrLow 
         LDA ($AC,x)
 
+        CMP #88  ; transparent note - keep do not load new tone
+        BEQ s3tnote
+
+
 skipnewpatternreq
         TAX
         JSR LoadToneLow
@@ -182,7 +186,7 @@ skipnewpatternreq
         STA s3tonehigh
         LDX #0
 
-
+s3tnote
         LDA $AC      ;check AddrLow to see if it's about to overflow
         CMP #255
         BEQ s3inc1
@@ -241,6 +245,9 @@ s2requestnote
         STA AddrLow 
         LDA ($AC,x) ;load in s2 note
 
+        CMP #88  ; transparent note - keep do not load new tone
+        BEQ s2tnote
+
         TAX
         JSR LoadToneLow
         STA s2tonelow
@@ -248,7 +255,7 @@ s2requestnote
         STA s2tonehigh
         LDX #0
 
-
+s2tnote
         LDA $AC      ;check AddrLow to see if it's about to overflow
         CMP #255
         BEQ s2inc1
@@ -296,6 +303,9 @@ s1requestnote
         STA AddrLow 
         LDA ($AC,x) ;load in s1 note
 
+        CMP #88  ; transparent note - keep do not load new tone
+        BEQ s1tnote
+
         TAX
         JSR LoadToneLow
         STA s1tonelow
@@ -303,7 +313,7 @@ s1requestnote
         STA s1tonehigh
         LDX #0
 
-
+s1tnote
         LDA $AC      ;check AddrLow to see if it's about to overflow
         CMP #255
         BEQ s1inc1
@@ -463,7 +473,27 @@ sounddelaylowsetup
 
 sounddelaylow
 
-        ;JSR pwmcheck
+pwmcheck
+       LDA #0
+       CMP pwmval
+       BEQ pwmon
+       
+
+pwmoff
+      LDA #0
+      ;LDA n4tonelow
+      STA n4
+      STA pwmval 
+      JMP pwmdone
+
+pwmon 
+        LDA n4tonelow
+        STA n4
+        LDA #1
+        STA pwmval
+
+pwmdone
+
        
         LDA sounddelaylowbyte
 
@@ -776,28 +806,6 @@ incaddr
        INC $AD
        RTS
 
-pwmcheck
-       LDA #0
-       CMP pwmval
-       BEQ pwmon
-       
-
-pwmoff
-      ;LDA #0
-      LDA n4tonelow
-      STA n4
-      STA pwmval 
-      JMP pwmdone
-
-pwmon 
-        LDA n4tonelow
-        STA n4
-        LDA #1
-        STA pwmval
-
-pwmdone
-        RTS
-
 
 
 PRINT_CHAR = $FFD2
@@ -892,8 +900,8 @@ VOLUME=36878
 
 Tempo   byte 0
 TempoConst      byte 0
-NTSCSpeed       byte 146 ;64 w/ PWM, 
-PALSpeed        byte 160 ;73
+NTSCSpeed       byte 67 ;67 w/ PWM, 146 w/o 
+PALSpeed        byte 73 ;73 w/ PWM, 160 w/o
 
 SpeedHighByte   byte 1
 
@@ -913,19 +921,18 @@ NTSCToneHighByte    byte 7,6,1,2,0,4,5,4,0,3,4,2,7,3,5,5,4,2,6,2,4,5,6,5,4,1,6,3
 
 ;print S1=, S2=, S3=, N4=, P=, L=
 sstring byte 147,13,13,83,49,61,32,32,46,32,32,13, 83,50,61,32,32,46,32,32,13, 83,51,61,32,32,46,32,32,13, 78,52,61,32,32,13, 32,80,61,32,32,13, 32,76,61,32,32,13,13
-        null 'ARTIST'
+        null 'GYRUSS'
         byte 13
-        null 'SONG TITLE'
+        null 'FIRST WARP'
         byte 13
 ;terminate string printing routine
         byte 36
 
 frameinterval           byte 48        
-fadeouttime             byte 0
+fadeouttime             byte 255
 numloopsconst           byte 3
 
 
 
 ; auto generated script data goes here
-
 
