@@ -1179,8 +1179,11 @@ address_header_out.append("")
 address_header_out.append("sounddata")
 
 program_out=[]
-if args.full:
+if args.full and c64mode==0:
 	with open("asmPlayer_template.txt", 'r') as f:
+		program_out = f.read().splitlines()
+if args.full and c64mode==1:
+	with open("C64asmPlayer_template.txt", 'r') as f:
 		program_out = f.read().splitlines()
 	
 program_out=program_out + address_header_out
