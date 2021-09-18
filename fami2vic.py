@@ -37,6 +37,9 @@ parser.add_argument("-CO", "--correct-overflow",
 parser.add_argument("-F", "--full",
                     action="store_true", dest="full", default=False,
                     help="Output full ASM program using asmPlayer_template.txt")
+parser.add_argument("-C64", "--commodore64",
+                    action="store_true", dest="c64mode", default=False,
+                    help="Compile PRG for Commodore 64")
 					
 
 args = parser.parse_args()
@@ -50,8 +53,21 @@ if args.swaps2s3==False:
 else:
 	SwapS2S3=1
 	
+if args.c64mode==False:
+	c64mode=0
+else:
+	c64mode=1
+	
+if c64mode==1:
+	mute_note=97
+	max_note=96
+else:
+	mute_note=73
+	max_note=72
+	
+	
 
-if SwapS2S3==0:
+if SwapS2S3==0 and c64mode==0:
 	if args.square1==None:
 		print "No Square1 Modifier specified, defaulting to -24"
 		Square1NoteModifier=-24
@@ -70,7 +86,7 @@ if SwapS2S3==0:
 	else:
 		TriangleNoteModifier=int(args.triangle)
 		
-if SwapS2S3==1:
+if SwapS2S3==1 and c64mode==0:
 	if args.square1==None:
 		print "No Square1 Modifier specified, defaulting to -12"
 		Square1NoteModifier=-12
@@ -89,9 +105,32 @@ if SwapS2S3==1:
 	else:
 		TriangleNoteModifier=int(args.triangle)
 		
-if args.datastart==None:
+if c64mode==1:
+	if args.square1==None:
+		print "No Square1 Modifier specified, defaulting to 12"
+		Square1NoteModifier=12
+	else:
+		Square1NoteModifier=int(args.square1)
+		
+	if args.square2==None:
+		print "No Square2 Modifier specified, defaulting to 12"
+		Square2NoteModifier=12
+	else:
+		Square2NoteModifier=int(args.square2)
+		
+	if args.triangle==None:
+		print "No Triangle Modifier specified, defaulting to 0"
+		TriangleNoteModifier=0
+	else:
+		TriangleNoteModifier=int(args.triangle)
+			
+		
+if args.datastart==None and c64mode==0:
 	print "No data start address specified, using 2110 (HEX)"
 	DataStartAddress="2110"
+elif args.datastart==None and c64mode==1:
+	print "No data start address specified, using 5110 (HEX)"
+	DataStartAddress="5400"
 else:
 	DataStartAddress=args.datastart
 		
@@ -160,12 +199,12 @@ NoiseNumCorrectedNotes=0
 
 LoopPoint=0
 
-ABCList=["C0","C#0","D0","D#0","E0","F0","F#0","G0","G#0","A0","A#0","B0","C1","C#1","D1","D#1","E1","F1","F#1","G1","G#1","A1","A#1","B1","C2","C#2","D2","D#2","E2","F2","F#2","G2","G#2","A2","A#2","B2","C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4","C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5","C6","C#6","D6","D#6","E6","F6","F#6","G6","G#6","A6","A#6","B6","C7","C#7","D7","D#7","E7","F7","F#7","G7","G#7","A7","A#7","B7",88]
+ABCList=["C0","C#0","D0","D#0","E0","F0","F#0","G0","G#0","A0","A#0","B0","C1","C#1","D1","D#1","E1","F1","F#1","G1","G#1","A1","A#1","B1","C2","C#2","D2","D#2","E2","F2","F#2","G2","G#2","A2","A#2","B2","C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4","C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5","C6","C#6","D6","D#6","E6","F6","F#6","G6","G#6","A6","A#6","B6","C7","C#7","D7","D#7","E7","F7","F#7","G7","G#7","A7","A#7","B7",108]
 PercList=["0#","1#","2#","3#","4#","5#","6#","7#","8#","9#","A#","B#","C#","D#","E#","F#"]
+
 
 PercTone=[135,147,151,159,163,167,173,179,183,187,191,195,199,201,203,207,209,212,215,217,219,221,223,225,227,228,229,231,232,233,235,236,237,238,239,240,241]
 
-DurationModifier=-1
 
 Lines.pop() #Remove last two lines from file
 Lines.pop()
@@ -284,10 +323,10 @@ Square1Mute=0
 Square2Mute=0
 TriangleMute=0
 
-Square1LastNote=73
-Square2LastNote=73
-TriangleLastNote=73
-NoiseLastNote=73
+Square1LastNote=mute_note
+Square2LastNote=mute_note
+TriangleLastNote=mute_note
+NoiseLastNote=mute_note
 
 Square1EndedOnD00=0
 Square2EndedOnD00=0
@@ -295,11 +334,11 @@ TriangleEndedOnD00=0
 NoiseEndedOnD00=0
 
 Square1Highest=0
-Square1Lowest=72
+Square1Lowest=max_note
 Square2Highest=0
-Square2Lowest=72
+Square2Lowest=max_note
 TriangleHighest=0
-TriangleLowest=72
+TriangleLowest=max_note
 
 S1Duration=0
 S2Duration=0
@@ -347,12 +386,12 @@ for n in range(TotalPatterns):
 						print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
 					else:
 						#Square1Pattern[n].append(Square1LastNote)
-						Square1Pattern[n].append(88)						
-						print "No beginning note detected (with volume parameter), appending code 88"
+						Square1Pattern[n].append(108)						
+						#print "No beginning note detected (with volume parameter), appending code 108"
 				else:
 					#Square1Pattern[n].append(Square1LastNote)
-					Square1Pattern[n].append(88)
-					print "No beginning note detected (with no volume), appending code 88"
+					Square1Pattern[n].append(108)
+					#print "No beginning note detected (with no volume), appending code 108"
 				Square1LastFrame=i
 				
 			if Square1CurString!=BlankLine:
@@ -361,7 +400,7 @@ for n in range(TotalPatterns):
 					Square1Note=Square1Note.replace("-","")
 					if i>0:				#append duration value only if this isn't the first note in the list
 						Square1NoteDuration=i-Square1LastFrame
-						Square1Pattern[n].append(Square1NoteDuration+DurationModifier)
+						Square1Pattern[n].append(Square1NoteDuration-1)
 					Square1Pattern[n].append(Square1Note)
 					Square1LastFrame=i
 					
@@ -372,10 +411,10 @@ for n in range(TotalPatterns):
 				if Square1Note==StopNote1 or Square1Note==StopNote2:
 					if i>0:
 						Square1NoteDuration=i-Square1LastFrame
-						Square1Pattern[n].append(Square1NoteDuration+DurationModifier)
-					Square1Pattern[n].append(73)
+						Square1Pattern[n].append(Square1NoteDuration-1)
+					Square1Pattern[n].append(mute_note)
 					Square1LastFrame=i
-					Square1LastNote=73
+					Square1LastNote=mute_note
 					Square1VolMuted=0
 					
 ###### Mute/Unmute notes based on volume cutoff ##########					
@@ -386,10 +425,10 @@ for n in range(TotalPatterns):
 					
 					if i>0:
 						Square1NoteDuration=i-Square1LastFrame
-						Square1Pattern[n].append(Square1NoteDuration+DurationModifier)
-					Square1Pattern[n].append(73)
+						Square1Pattern[n].append(Square1NoteDuration-1)
+					Square1Pattern[n].append(mute_note)
 					Square1LastFrame=i
-					Square1LastNote=73
+					Square1LastNote=mute_note
 					
 					Square1VolMuted=0	
 #					print "Found volume cutoff (",Square1VolDec,") at Pattern",n,", row",i,".  Muting note",Square1LastMutedNote,"duration:",Square1NoteDuration
@@ -399,7 +438,7 @@ for n in range(TotalPatterns):
 				
 					if i>0:				#append duration value only if this isn't the first note in the list
 						Square1NoteDuration=i-Square1LastFrame
-						Square1Pattern[n].append(Square1NoteDuration+DurationModifier)
+						Square1Pattern[n].append(Square1NoteDuration-1)
 					Square1Pattern[n].append(Square1LastMutedNote)
 					Square1LastFrame=i
 					
@@ -418,12 +457,12 @@ for n in range(TotalPatterns):
 						print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
 					else:
 						#Square2Pattern[n].append(Square2LastNote)
-						Square2Pattern[n].append(88)						
-						print "No beginning note detected (with volume parameter), appending code 88"
+						Square2Pattern[n].append(108)						
+						#print "No beginning note detected (with volume parameter), appending code 108"
 				else:
 					#Square2Pattern[n].append(Square2LastNote)
-					Square2Pattern[n].append(88)
-					print "No beginning note detected (with no volume), appending code 88"
+					Square2Pattern[n].append(108)
+					#print "No beginning note detected (with no volume), appending code 108"
 				Square2LastFrame=i
 				
 			if Square2CurString!=BlankLine:
@@ -432,7 +471,7 @@ for n in range(TotalPatterns):
 					Square2Note=Square2Note.replace("-","")
 					if i>0:				#append duration value only if this isn't the first note in the list
 						Square2NoteDuration=i-Square2LastFrame
-						Square2Pattern[n].append(Square2NoteDuration+DurationModifier)
+						Square2Pattern[n].append(Square2NoteDuration-1)
 					Square2Pattern[n].append(Square2Note)
 					Square2LastFrame=i
 					
@@ -443,10 +482,10 @@ for n in range(TotalPatterns):
 				if Square2Note==StopNote1 or Square2Note==StopNote2:
 					if i>0:
 						Square2NoteDuration=i-Square2LastFrame
-						Square2Pattern[n].append(Square2NoteDuration+DurationModifier)
-					Square2Pattern[n].append(73)
+						Square2Pattern[n].append(Square2NoteDuration-1)
+					Square2Pattern[n].append(mute_note)
 					Square2LastFrame=i	
-					Square2LastNote=73
+					Square2LastNote=mute_note
 					Square2VolMuted=0
 					
 					
@@ -458,10 +497,10 @@ for n in range(TotalPatterns):
 					
 					if i>0:
 						Square2NoteDuration=i-Square2LastFrame
-						Square2Pattern[n].append(Square2NoteDuration+DurationModifier)
-					Square2Pattern[n].append(73)
+						Square2Pattern[n].append(Square2NoteDuration-1)
+					Square2Pattern[n].append(mute_note)
 					Square2LastFrame=i
-					Square2LastNote=73
+					Square2LastNote=mute_note
 					
 					Square2VolMuted=0	
 #					print "Found volume cutoff (",Square2VolDec,") at Pattern",n,", row",i,".  Muting note",Square2LastMutedNote,"duration:",Square2NoteDuration
@@ -471,7 +510,7 @@ for n in range(TotalPatterns):
 				
 					if i>0:				#append duration value only if this isn't the first note in the list
 						Square2NoteDuration=i-Square2LastFrame
-						Square2Pattern[n].append(Square2NoteDuration+DurationModifier)
+						Square2Pattern[n].append(Square2NoteDuration-1)
 					Square2Pattern[n].append(Square2LastMutedNote)
 					Square2LastFrame=i
 					
@@ -489,12 +528,12 @@ for n in range(TotalPatterns):
 						print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
 					else:
 						#TrianglePattern[n].append(TriangleLastNote)
-						TrianglePattern[n].append(88)						
-						print "No beginning note detected (with volume parameter), appending code 88"
+						TrianglePattern[n].append(108)						
+						#print "No beginning note detected (with volume parameter), appending code 108"
 				else:
 					#TrianglePattern[n].append(TriangleLastNote)
-					TrianglePattern[n].append(88)
-					print "No beginning note detected (with no volume), appending code 88"
+					TrianglePattern[n].append(108)
+					#print "No beginning note detected (with no volume), appending code 108"
 				TriangleLastFrame=i
 				
 			if TriangleCurString!=BlankLine:
@@ -503,7 +542,7 @@ for n in range(TotalPatterns):
 					TriangleNote=TriangleNote.replace("-","")
 					if i>0:				#append duration value only if this isn't the first note in the list
 						TriangleNoteDuration=i-TriangleLastFrame
-						TrianglePattern[n].append(TriangleNoteDuration+DurationModifier)
+						TrianglePattern[n].append(TriangleNoteDuration-1)
 					TrianglePattern[n].append(TriangleNote)
 					TriangleLastFrame=i
 					
@@ -513,9 +552,9 @@ for n in range(TotalPatterns):
 				if (TriangleNote==StopNote1) or (TriangleNote==StopNote2):
 					if i>0:
 						TriangleNoteDuration=i-TriangleLastFrame
-						TrianglePattern[n].append(TriangleNoteDuration+DurationModifier)
-					TrianglePattern[n].append(73)
-					TriangleLastNote=73					
+						TrianglePattern[n].append(TriangleNoteDuration-1)
+					TrianglePattern[n].append(mute_note)
+					TriangleLastNote=mute_note					
 					TriangleLastFrame=i
 					TriangleVolMuted=0
 					
@@ -529,10 +568,10 @@ for n in range(TotalPatterns):
 					
 					if i>0:
 						TriangleNoteDuration=i-TriangleLastFrame
-						TrianglePattern[n].append(TriangleNoteDuration+DurationModifier)
-					TrianglePattern[n].append(73)
+						TrianglePattern[n].append(TriangleNoteDuration-1)
+					TrianglePattern[n].append(mute_note)
 					TriangleLastFrame=i
-					TriangleLastNote=73
+					TriangleLastNote=mute_note
 					print "Found volume cutoff (",TriangleVolDec,") at Pattern",n,", row",i,".  Muting note",TriangleLastMutedNote,"duration:",TriangleNoteDuration
 					TriangleVolMuted=1
 									
@@ -540,7 +579,7 @@ for n in range(TotalPatterns):
 					print "Triangle Volume passed above threshhold"
 					if i>0:				#append duration value only if this isn't the first note in the list
 						TriangleNoteDuration=i-TriangleLastFrame
-						TrianglePattern[n].append(TriangleNoteDuration+DurationModifier)
+						TrianglePattern[n].append(TriangleNoteDuration-1)
 					TrianglePattern[n].append(TriangleLastMutedNote)
 					TriangleLastFrame=i
 					
@@ -548,16 +587,17 @@ for n in range(TotalPatterns):
 					print "Volume Muted note has risen above cutoff (",TriangleVolDec,") level at Pattern",n,", row",i,".  Unmuting note",TriangleLastMutedNote,"duration:",TriangleNoteDuration
 					TriangleVolMuted=0
 				
-	###### Calculate Noise Data ######		
+	###### Calculate Noise Data ######
+		if NoiseEndedOnD00==0:	
 			if i==0 and NoiseCurString==BlankLine:  #Set as "Stop Note" if no data on the first line
 				if NoiseVol!=BlankVol:
 					NoiseVolDec=int(NoiseVol,16)
 					if (NoiseVolMuted==0 and NoiseVolDec<NoiseVolumeCutoff) or (NoiseVolMuted==1 and NoiseVolDec>=NoiseVolumeCutoff):
 						print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
 					else:
-						NoisePattern[n].append(73)
+						NoisePattern[n].append(mute_note)
 				else:
-					NoisePattern[n].append(73)
+					NoisePattern[n].append(mute_note)
 				NoiseLastFrame=i
 				
 			if NoiseCurString!=BlankLine:
@@ -566,7 +606,7 @@ for n in range(TotalPatterns):
 					NoiseNote=NoiseNote.replace("-","")
 					if i>0:				#append duration value only if this isn't the first note in the list
 						NoiseNoteDuration=i-NoiseLastFrame
-						NoisePattern[n].append(NoiseNoteDuration+DurationModifier)
+						NoisePattern[n].append(NoiseNoteDuration-1)
 					NoisePattern[n].append(NoiseNote)
 					NoiseLastFrame=i
 					
@@ -576,9 +616,9 @@ for n in range(TotalPatterns):
 				if (NoiseNote==StopNote1) or (NoiseNote==StopNote2):
 					if i>0:
 						NoiseNoteDuration=i-NoiseLastFrame
-						NoisePattern[n].append(NoiseNoteDuration+DurationModifier)
-					NoisePattern[n].append(73)
-					NoiseLastNote=73
+						NoisePattern[n].append(NoiseNoteDuration-1)
+					NoisePattern[n].append(mute_note)
+					NoiseLastNote=mute_note
 					NoiseLastFrame=i
 					NoiseVolMuted=0
 					
@@ -591,10 +631,10 @@ for n in range(TotalPatterns):
 					
 					if i>0:
 						NoiseNoteDuration=i-NoiseLastFrame
-						NoisePattern[n].append(NoiseNoteDuration+DurationModifier)
-					NoisePattern[n].append(73)
+						NoisePattern[n].append(NoiseNoteDuration-1)
+					NoisePattern[n].append(mute_note)
 					NoiseLastFrame=i
-					NoiseLastNote=73	
+					NoiseLastNote=mute_note	
 #					print "Found volume cutoff (",NoiseVolDec,") at Pattern",n,", row",i,".  Muting note",NoiseLastMutedNote,"duration:",NoiseNoteDuration
 					NoiseVolMuted=1
 									
@@ -602,7 +642,7 @@ for n in range(TotalPatterns):
 				
 					if i>0:				#append duration value only if this isn't the first note in the list
 						NoiseNoteDuration=i-NoiseLastFrame
-						NoisePattern[n].append(NoiseNoteDuration+DurationModifier)
+						NoisePattern[n].append(NoiseNoteDuration-1)
 					NoisePattern[n].append(NoiseLastMutedNote)
 					NoiseLastFrame=i
 					
@@ -654,16 +694,16 @@ for n in range(TotalPatterns):
 			
 
 	Square1NoteDuration=RowsPerPattern-Square1LastFrame
-	Square1Pattern[n].append(Square1NoteDuration+DurationModifier)
+	Square1Pattern[n].append(Square1NoteDuration-1)
 	
 	Square2NoteDuration=RowsPerPattern-Square2LastFrame
-	Square2Pattern[n].append(Square2NoteDuration+DurationModifier)
+	Square2Pattern[n].append(Square2NoteDuration-1)
 	
 	TriangleNoteDuration=RowsPerPattern-TriangleLastFrame
-	TrianglePattern[n].append(TriangleNoteDuration+DurationModifier)
+	TrianglePattern[n].append(TriangleNoteDuration-1)
 	
 	NoiseNoteDuration=RowsPerPattern-NoiseLastFrame
-	NoisePattern[n].append(NoiseNoteDuration+DurationModifier)
+	NoisePattern[n].append(NoiseNoteDuration-1)
 
 	Square1LastFrame=0
 	Square2LastFrame=0
@@ -740,21 +780,21 @@ for n in range(TotalOrders):
 			CurrentNoteEng=CurrentPattern[i*2]
 			CurrentDuration=CurrentPattern[i*2+1]
 			
-			if ((CurrentNoteEng != 73) and (CurrentNoteEng != 80) and (CurrentNoteEng != 88)):  #Normal note positions
+			if ((CurrentNoteEng != mute_note) and (CurrentNoteEng != 108)):  #Normal note positions
 				CurrentNotePos=ABCList.index(CurrentNoteEng)
-				if ((CurrentNotePos + Square1NoteModifier)) >= 72:
+				if ((CurrentNotePos + Square1NoteModifier)) >= max_note:
 					print "Square 1 exceeded array.  Value=", ABCList.index(CurrentNoteEng),"Note was", CurrentNoteEng
 					if IgnoreOverflowErrors==0:
 						sys.exit()
 					else:
-						if CorrectOverflowErrors and ((CurrentNotePos + Square1NoteModifier-12)) < 72:
+						if CorrectOverflowErrors and ((CurrentNotePos + Square1NoteModifier-12)) < max_note:
 							print "Adjusting",CurrentNoteEng,"down one octave"
 							Square1NumCorrectedNotes=Square1NumCorrectedNotes+1
 							buildstr=bytestr + str(CurrentNotePos+Square1NoteModifier-12) + "," + str(CurrentDuration) + "; S3 note and duration"
 						else:
 							print "Muting note"
 							Square1NumOverNotes=Square1NumOverNotes+1
-							buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S3 note and duration"
+							buildstr=bytestr + str(mute_note) + "," + str(CurrentDuration) + "; S3 note and duration"
 							Square1MutedNotes=1
 					
 				else:	
@@ -774,7 +814,7 @@ for n in range(TotalOrders):
 						else:	
 							print "Muting note"
 							Square1NumUnderNotes=Square1NumUnderNotes+1
-							buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S3 note and duration"
+							buildstr=bytestr + str(mute_note) + "," + str(CurrentDuration) + "; S3 note and duration"
 							Square1MutedNotes=1
 						
 
@@ -783,11 +823,11 @@ for n in range(TotalOrders):
 				if CurrentNotePos<Square1Lowest:
 					Square1Lowest=CurrentNotePos
 					
-			if CurrentNoteEng==73:		#Stop Code
-				buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S3 note and duration"
+			if CurrentNoteEng==mute_note:		#Stop Code
+				buildstr=bytestr + str(mute_note) + "," + str(CurrentDuration) + "; S3 note and duration"
 				
-			if CurrentNoteEng==88:		#Transparent Note
-				buildstr=bytestr + str(88) + "," + str(CurrentDuration) + "; S3 transparent note and duration"
+			if CurrentNoteEng==108:		#Transparent Note
+				buildstr=bytestr + str(108) + "," + str(CurrentDuration) + "; S3 transparent note and duration"
 				
 			DataStartAddrDec=DataStartAddrDec+2
 			program_data_out.append(buildstr)
@@ -797,7 +837,7 @@ for n in range(TotalOrders):
 		S3usedaddresseslow.append("$"+s3addr[4:6])
 		
 		
-		buildstr=bytestr + str(99) + "; S3 End Pattern Code"
+		buildstr=bytestr + str(109) + "; S3 End Pattern Code"
 		program_data_out.append(buildstr)
 		DataStartAddrDec=DataStartAddrDec+1
 		
@@ -846,21 +886,21 @@ for n in range(TotalOrders):
 			CurrentNoteEng=CurrentPattern[i*2]
 			CurrentDuration=CurrentPattern[i*2+1]
 			
-			if ((CurrentNoteEng != 73) and (CurrentNoteEng != 80) and (CurrentNoteEng != 88)):  #Normal note positions
+			if ((CurrentNoteEng != mute_note) and (CurrentNoteEng != 108)):  #Normal note positions
 				CurrentNotePos=ABCList.index(CurrentNoteEng)
-				if ((CurrentNotePos + Square2NoteModifier)) >= 72:
+				if ((CurrentNotePos + Square2NoteModifier)) >= max_note:
 					print "Square 2 exceeded array.  Value=", ABCList.index(CurrentNoteEng),"Note was", CurrentNoteEng
 					if IgnoreOverflowErrors==0:
 						sys.exit()
 					else:
-						if CorrectOverflowErrors and ((CurrentNotePos + Square2NoteModifier-12)) < 72:
+						if CorrectOverflowErrors and ((CurrentNotePos + Square2NoteModifier-12)) < max_note:
 							print "Adjusting",CurrentNoteEng,"down one octave"
 							Square2NumCorrectedNotes=Square2NumCorrectedNotes+1
 							buildstr=bytestr + str(CurrentNotePos+Square2NoteModifier-12) + "," + str(CurrentDuration) + "; S2 note and duration"
 						else:
 							print "Muting note"
 							Square2NumOverNotes=Square2NumOverNotes+1
-							buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S2 note and duration"
+							buildstr=bytestr + str(mute_note) + "," + str(CurrentDuration) + "; S2 note and duration"
 							Square2MutedNotes=1
 				
 				else:
@@ -879,7 +919,7 @@ for n in range(TotalOrders):
 						else:	
 							print "Muting note"
 							Square2NumUnderNotes=Square2NumUnderNotes+1
-							buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S2 note and duration"
+							buildstr=bytestr + str(mute_note) + "," + str(CurrentDuration) + "; S2 note and duration"
 							Square2MutedNotes=1
 					
 					
@@ -888,11 +928,11 @@ for n in range(TotalOrders):
 				if CurrentNotePos<Square2Lowest:
 					Square2Lowest=CurrentNotePos
 					
-			if CurrentNoteEng==73:		#Stop Code
-				buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S2 stop note and duration"
+			if CurrentNoteEng==mute_note:		#Stop Code
+				buildstr=bytestr + str(mute_note) + "," + str(CurrentDuration) + "; S2 stop note and duration"
 				
-			if CurrentNoteEng==88:		#Transparent Note
-				buildstr=bytestr + str(88) + "," + str(CurrentDuration) + "; S2 transparent note and duration"
+			if CurrentNoteEng==108:		#Transparent Note
+				buildstr=bytestr + str(108) + "," + str(CurrentDuration) + "; S2 transparent note and duration"
 				
 			DataStartAddrDec=DataStartAddrDec+2
 			program_data_out.append(buildstr)
@@ -902,7 +942,7 @@ for n in range(TotalOrders):
 		S2usedaddresseslow.append("$"+S2addr[4:6])
 		
 		
-		buildstr=bytestr + str(99) + "; S2 End Pattern Code"
+		buildstr=bytestr + str(109) + "; S2 End Pattern Code"
 		program_data_out.append(buildstr)
 		DataStartAddrDec=DataStartAddrDec+1
 		
@@ -947,20 +987,20 @@ for n in range(TotalOrders):
 			CurrentNoteEng=CurrentPattern[i*2]
 			CurrentDuration=CurrentPattern[i*2+1]
 			
-			if ((CurrentNoteEng != 73) and (CurrentNoteEng != 80) and (CurrentNoteEng != 88)):  #Normal note positions
-				if ((CurrentNotePos + Square2NoteModifier)) >= 72:
+			if ((CurrentNoteEng != mute_note) and (CurrentNoteEng != 108)):  #Normal note positions
+				if ((CurrentNotePos + Square2NoteModifier)) >= max_note:
 					print "Triangle Note exceeded array.  Value=", ABCList.index(CurrentNoteEng),"Note was", CurrentNoteEng
 					if IgnoreOverflowErrors==0:
 						sys.exit()
 					else:
-						if CorrectOverflowErrors and ((CurrentNotePos + TriangleNoteModifier-12)) < 72:
+						if CorrectOverflowErrors and ((CurrentNotePos + TriangleNoteModifier-12)) < max_note:
 							print "Adjusting",CurrentNoteEng,"down one octave"
 							TriangleNumCorrectedNotes=TriangleNumCorrectedNotes+1
 							buildstr=bytestr + str(CurrentNotePos+TriangleNoteModifier-12) + "," + str(CurrentDuration) + "; S1 note and duration"
 						else:
 							print "Muting note"
 							TriangleNumOverNotes=TriangleNumOverNotes+1
-							buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S1 note and duration"
+							buildstr=bytestr + str(mute_note) + "," + str(CurrentDuration) + "; S1 note and duration"
 							TriangleMutedNotes=1
 				
 				else:
@@ -980,7 +1020,7 @@ for n in range(TotalOrders):
 						else:	
 							print "Muting note"
 							TriangleNumUnderNotes=TriangleNumUnderNotes+1
-							buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S1 note and duration"
+							buildstr=bytestr + str(mute_note) + "," + str(CurrentDuration) + "; S1 note and duration"
 							TriangleMutedNotes=1
 					
 				if CurrentNotePos>TriangleHighest:
@@ -988,11 +1028,11 @@ for n in range(TotalOrders):
 				if CurrentNotePos<TriangleLowest:
 					TriangleLowest=CurrentNotePos
 					
-			if CurrentNoteEng==73:		#Stop Code
-				buildstr=bytestr + str(73) + "," + str(CurrentDuration) + "; S1 stop note and duration"
+			if CurrentNoteEng==mute_note:		#Stop Code
+				buildstr=bytestr + str(mute_note) + "," + str(CurrentDuration) + "; S1 stop note and duration"
 				
-			if CurrentNoteEng==88:		#Transparent note
-				buildstr=bytestr + str(88) + "," + str(CurrentDuration) + "; S1 transparent note and duration"
+			if CurrentNoteEng==108:		#Transparent note
+				buildstr=bytestr + str(108) + "," + str(CurrentDuration) + "; S1 transparent note and duration"
 				
 			DataStartAddrDec=DataStartAddrDec+2
 			program_data_out.append(buildstr)
@@ -1018,7 +1058,7 @@ for n in range(TotalOrders):
 	CurrentOrder=int(NoiseOrder[n], 16)
 	CurrentPattern=NoisePattern[CurrentOrder]
 	CurrentPatternLen=len(CurrentPattern)
-#	print "Current Pattern (",CurrentOrder,")is:", CurrentPattern
+	#print "Current Pattern (",CurrentOrder,")is:", CurrentPattern
 	
 	
 	if CurrentOrder in N4usedpatterns:
@@ -1047,7 +1087,7 @@ for n in range(TotalOrders):
 			CurrentNoteEng=CurrentPattern[i*2]
 			CurrentDuration=CurrentPattern[i*2+1]
 			
-			if ((CurrentNoteEng != 73) and (CurrentNoteEng != 80)):  #Normal note positions
+			if ((CurrentNoteEng != mute_note)):  #Normal note positions
 				CurrentNotePos=PercList.index(CurrentNoteEng)
 				Tone=CurrentNotePos*8+128
 				if Tone>=256:
@@ -1055,7 +1095,7 @@ for n in range(TotalOrders):
 				buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 low and duration"
 				program_data_out.append(buildstr)
 				
-			if CurrentNoteEng==73:		#Stop Code
+			if CurrentNoteEng==mute_note:		#Stop Code
 				Tone=0	
 				buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 low and duration"
 				program_data_out.append(buildstr)

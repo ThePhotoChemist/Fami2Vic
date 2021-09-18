@@ -1,16 +1,14 @@
-;Fami2Vic player for Expanded (8k) VIC-20
+;Fami2C64 player for THE COMMODORE SIXTY-FUCKING FOUR
 
+; 10 SYS (18432)
 
-; 10 SYS (4645)
+*=$0801
 
-*=$1201
-
-        BYTE    $0E, $12, $0A, $00, $9E, $20, $28,  $34, $36, $34, $35, $29, $00, $00, $00
-
+        BYTE    $0E, $08, $0A, $00, $9E, $20, $28,  $31, $38, $34, $33, $32, $29, $00, $00, $00
 
 
 
-*=$1225
+*=$4800
 
 defm    mPrint
         LDA #/1
@@ -48,8 +46,8 @@ start
         LDA numloopsconst
         STA numloops
 
-        LDA 60900
-        CMP #12 ; 5=NTSC, 12=PAL
+        LDA 678
+        CMP #1 ; 0=NTSC, 1=PAL
         BEQ LoadPALSpeed
         LDA NTSCSpeed
         STA Tempo
@@ -63,18 +61,8 @@ LoadPALSpeed
 AfterTempo
         LDX #0
 
-load10bitofr
-        LDA 10bitofr,x
-        STA 832,x
-        INX
-        TXA
-        CMP #84
-        BNE load10bitofr
-        JSR 832
 
 loopstart
-        LDA #10 ; set volume
-        STA VOLUME ; store volume
 
         LDA s3addrlowlist
         STA s3addrlow
@@ -98,16 +86,48 @@ loopstart
         STA s3request
         STA s2request
         STA s1request
-        STA n4request        
+        STA n4request  
+
+        LDA #15
+        STA VOLUME
+
+        LDA #0
+        STA S31
+        STA S32
+        STA S21
+        STA S22
 
         LDX #0
         JSR hprint
         LDA numloops
-        PrintHex 4253,4254
-        
-        
-        
+        PrintHex 1307,1308 ; 1024 + 7 + 3
 
+        LDA #0
+        STA 54274 ; Square Wave Duty Cycle 1 Voice 1
+        STA 54281 ; Square Wave Duty Cycle 1 Voice 1
+
+        LDA #8
+        STA 54275 ;Square Wave Duty Cycle 2 Voice 1
+        STA 54282 ;Square Wave Duty Cycle 2 Voice 2
+
+        LDA #65
+        STA 54276 ;Waveform Select Voice 1
+        STA 54283 ;Waveform Select Voice 2
+
+        LDA #17
+        STA 54290 ;Waveform Select Voice 3
+
+        LDA #0
+        STA 54277 ; attack/decay duration Voice 1
+        STA 54284 ; attack/decay duration Voice 2
+        STA 54291 ; attack/decay duration Voice 3
+
+        LDA #240
+        STA 54278 ;sustain level / release duration Voice 1
+        STA 54285 ;sustain level / release duration Voice 2
+        STA 54292 ;sustain level / release duration Voice 3
+
+        
 soundloop
 
         LDY #1
@@ -138,7 +158,7 @@ s3requestnote
         STA AddrLow 
         LDA ($AC,x)             ;load in s3 note
 
-        CMP #109                ;if 109 then jump to new pattern request subroutine
+        CMP #109                 ;if 109 then jump to new pattern request subroutine
         BNE skipnewpatternreq   ;if not 109 then skip the JSR and load in the next note data
 
 newpatternreq
@@ -164,7 +184,7 @@ newpatternreq
         STA n4addrlow 
 
         LDA s3addrhigh
-        CMP #80
+        CMP #80 ; end song code
         BEQ exithelp
 
         LDX #0
@@ -410,49 +430,49 @@ loadsound
         
         LDA s3tonelow
         STA S31
-        STA 4098
+        STA 1026 ;3072
 
         LDA s3tonehigh
         STA s32
-        STA 37890
+        STA 55298 ;17408
 
         LDA s2tonelow
         STA S21
-        STA 4097
+        STA 1025
         LDA s2tonehigh
         STA S22
-        STA 37889
+        STA 55297
         JMP afterswap
 
 loadsoundswap
         LDA s2tonelow
         STA S31
-        STA 4098
+        STA 1026
 
         LDA s2tonehigh
         STA s32
-        STA 37890
+        STA 55298
 
         LDA s3tonelow
         STA S21
-        STA 4097
+        STA 1025
         LDA s3tonehigh
         STA S22
-        STA 37889
+        STA 55297
 
 afterswap
 
         LDA s1tonelow
         STA S11
-        STA 4096
+        STA 1024
         LDA s1tonehigh
         STA S12
-        STA 37888
+        STA 55296
 
         LDA n4tonelow
         STA N4
-        STA 37891
-        STA 4099
+        STA 55299
+        STA 1027
 
 
         ;LDA 36879
@@ -480,8 +500,8 @@ pwmcheck
        
 
 pwmoff
-      LDA #0
-      ;LDA n4tonelow
+      ;LDA #0
+      LDA n4tonelow
       STA n4
       STA pwmval 
       JMP pwmdone
@@ -510,26 +530,26 @@ sounddelayhigh
 
 displayinfo
 
-        LDA s1tonelow
-        PrintHex 4143,4144
+        LDA s1tonelow ;2x34/67
+        PrintHex 1107,1108
         LDA s1tonehigh
-        PrintHex 4146,4147
+        PrintHex 1110,1111
 
         LDA s2tonelow
-        PrintHex 4165,4166
+        PrintHex 1147,1148
         LDA s2tonehigh
-        PrintHex 4168,4169
+        PrintHex 1150,1151
 
         LDA s3tonelow
-        PrintHex 4187,4188
+        PrintHex 1187,1188
         LDA s3tonehigh
-        PrintHex 4190,4191
+        PrintHex 1190,1191
 
         LDA n4tonelow
-        PrintHex 4209,4210
+        PrintHex 1227,1228
 
         LDA patterncounter
-        PrintHex 4231,4232
+        PrintHex 1267,1268
 
 
         LDA #0
@@ -550,7 +570,6 @@ sounddelayloop                  ; used for duration counter
         LDA #0
         STA sounddelayhighbyte
         STA sounddelaylowbyte
-        STA 37141               ; the "quality" register for 10-bit-ofr
 
 ; ---------- S3 check for new note --------- ;
 s3newnotecheck
@@ -602,7 +621,7 @@ n4mutecheck                  ; - This makes the noise sound more like drums woul
 n4mute
         LDA #0
         STA N4          ; send 0 to noise voice register
-        STA 4099        ; send 0 to noise indicator on the screen
+        STA 1027        ; send 0 to noise indicator on the screen
         STA n4tonelow
 
 n4newnotecheck
@@ -624,11 +643,11 @@ frameinc
         INC framecount
 
 endofloop
-        LDA 197 ; current key
+        LDA 203 ; current key
         CMP #64
         BNE keycheck ; check inputs for quitting, skipping next, etc.
 afterkeycheck
-        LDA 197
+        LDA 203
         STA keypressold
         LDA TempoConst
         STA Tempo
@@ -656,19 +675,19 @@ frame0
         JMP soundloop
 
 keycheck
-        CMP #48 ;Q
+        CMP #62 ;Q
         BEQ keyquit
         CMP #28 ;N
         BEQ keynext
         CMP #35 ;B
         BEQ keyrev
-        CMP #42 ;F       
+        CMP #21 ;F       
         BEQ keyfast
-        CMP #10 ;R
+        CMP #17 ;R
         BEQ keyback
-        CMP #5 ;+
+        CMP #40 ;+
         BEQ keyloopup
-        CMP #61 ;-
+        CMP #71 ;-
         BEQ keyloopdown
 
         JMP soundloop
@@ -702,7 +721,7 @@ keyloopup
         BNE afterkeycheckhelp
         INC numloops
         LDA numloops
-        PrintHex 4253,4254
+        PrintHex 1307,1308
         JMP afterkeycheck
 
 keyloopdown
@@ -711,7 +730,7 @@ keyloopdown
         BNE afterkeycheckhelp
         DEC numloops
         LDA numloops
-        PrintHex 4253,4254
+        PrintHex 1307,1308
         JMP afterkeycheck
 
 afterkeycheckhelp
@@ -721,7 +740,7 @@ loophelp
         DEC numloops
         LDA numloops
         DEC CURRENTSONG
-        PrintHex 4253,4254
+        PrintHex 1307,1308
         LDA LoopPoint
         STA patterncounter
         JMP newpatternreq
@@ -737,19 +756,20 @@ exit
         CMP numloops
         BNE loophelp
         STA patterncounter
-        STA VOLUME
         STA HASPLAYED
         LDA #147
         JSR PRINT_CHAR
-        LDA #27
-        STA 36879
-        LDA #64
-        STA 37150  ; shut down 10-bit-ofr oscillator code, since it stops the VIC from loading new programs
+        LDA #254
+        STA 53280
+        LDA #246
+        STA 53281
+        LDA #0
+        STA VOLUME
         RTS
 
 LoadToneLow
-        LDA 60900
-        CMP #12 ; 5=NTSC, 12=PAL
+        LDA 678
+        CMP #1 ; 0=NTSC, 1=PAL
         BEQ LoadToneLowPAL
         LDA NTSCToneLowByte,x
         RTS
@@ -758,8 +778,8 @@ LoadToneLowPAL
         RTS
 
 LoadToneHigh
-        LDA 60900
-        CMP #12 ; 5=NTSC, 12=PAL
+        LDA 678
+        CMP #1 ; 0=NTSC, 1=PAL
         BEQ LoadToneHighPAL
         LDA NTSCToneHighByte,x
         RTS
@@ -788,9 +808,9 @@ fadeout
         JMP fadetest
 decreasevolume
 
-        DEC 36878
+        DEC VOLUME
         LDA #0
-        CMP 36878
+        CMP VOLUME
         BEQ clearloops
         JMP fadetest
 fadetesthelp
@@ -810,16 +830,21 @@ incaddr
 
 PRINT_CHAR = $FFD2
 
-S11=248
-S21=249
-S31=250
-S12=251
-S22=252
-S32=253
-N4=36877
+S11=54286
+S12=54287
 
-CURRENTSONG=950
-HASPLAYED=951
+S21=54279
+S22=54280
+
+S31=54272
+S32=54273
+
+
+N4=17670
+VOLUME=54296
+
+CURRENTSONG=17672
+HASPLAYED=17673
 
 
 AddrLow=$AC
@@ -896,27 +921,21 @@ numloops        byte 0
 
 patterncounter  byte 0
 
-VOLUME=36878
-
 Tempo   byte 0
 TempoConst      byte 0
-NTSCSpeed       byte 67 ;67 w/ PWM, 146 w/o 
-PALSpeed        byte 73 ;73 w/ PWM, 160 w/o
+NTSCSpeed       byte 165 ;67 w/ PWM, 146 w/o 
+PALSpeed        byte 185 ;73 w/ PWM, 160 w/o
 
 SpeedHighByte   byte 1
 
 ;PAL Tones
-PALToneLowByte     byte 0,130,137,143,149,155,161,166,171,176,180,184,188,192,196,199,202,205,208,210,213,215,217,220,221,223,225,227,228,230,231,232,234,235,236,237,238,239,240,241,241,242,243,244,244,245,245,246,246,247,247,248,248,248,249,249,249,250,250,250,250,251,251,251,251,251,252,252,252,252,252,252,0,0,0,0,0,0,0,0,0,0,0,0,0
-PALToneHighByte    byte 0,0,1,6,7,7,3,5,5,2,6,7,7,4,0,3,4,3,2,7,2,5,7,0,7,6,4,1,6,2,5,7,1,3,3,4,4,3,2,1,7,5,2,0,5,1,6,2,6,2,5,0,3,6,1,4,6,1,3,5,7,1,3,4,6,7,1,2,3,4,5,6
+PALToneHighByte     byte 1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,4,4,4,4,5,5,5,6,6,6,7,7,8,8,9,9,10,10,11,12,13,13,14,15,16,17,18,19,20,21,23,24,26,27,29,31,32,34,36,39,41,43,46,49,52,55,58,62,65,69,73,78,82,87,92,98,104,110,117,124,131,139,147,156,165,175,185,196,208,221,234,248,0,0,0
+PALToneLowByte    byte 22,39,57,75,95,116,138,161,186,212,240,14,45,78,113,150,190,231,20,66,116,169,224,27,90,156,226,45,123,207,39,133,232,81,193,55,180,56,196,89,247,157,78,10,208,162,129,109,103,112,137,178,237,59,156,19,160,69,2,218,206,224,17,100,218,118,57,38,64,137,4,180,156,192,35,200,180,235,114,76,128,18,8,104,57,128,69,144,104,214,227,153,0,36,16,0,0,0
 
 ;NTSC Tones
-NTSCToneLowByte     byte 132,139,146,152,158,163,168,173,178,182,186,190,193,197,200,203,206,209,211,214,216,218,220,222,224,226,227,229,230,232,233,234,235,236,237,238,239,240,241,242,242,243,244,244,245,245,246,246,247,247,248,248,249,249,249,249,250,250,250,251,251,251,251,251,252,252,252,252,252,252,252,253,0,0,0,0,0,0,0,0,0,0,0,0,0
-NTSCToneHighByte    byte 7,6,1,2,0,4,5,4,0,3,4,2,7,3,5,5,4,2,6,2,4,5,6,5,4,1,6,3,6,1,3,5,6,7,7,7,6,5,3,1,7,4,2,6,3,7,3,7,3,6,2,5,0,2,5,7,2,4,6,0,1,3,5,6,0,1,2,4,5,6,7,0,0
+NTSCToneHighByte     byte 1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,4,4,4,4,5,5,5,6,6,7,7,7,8,8,9,9,10,11,11,12,13,14,14,15,16,17,18,19,21,22,23,25,26,28,29,31,33,35,37,39,42,44,47,50,53,56,59,63,67,71,75,79,84,89,94,100,106,112,119,126,134,142,150,159,168,179,189,200,212,225,238,253,0,0
+NTSCToneLowByte    byte 12,28,45,63,82,102,123,146,170,195,222,250,24,56,90,126,164,204,247,36,84,134,188,245,49,113,180,252,72,152,237,72,167,12,120,233,98,226,105,248,144,48,219,143,78,25,240,211,196,195,209,240,31,97,182,30,157,50,223,166,136,134,163,224,63,194,107,61,58,100,190,76,15,12,70,191,125,132,214,122,115,200,125,151,30,24,139,127,251,7,172,244,231,143,249,47,0,0
 
-10bitofr        byte    169,99,141,24,3,169,3,141,25,3,169,128,141,20,145,133,254,162,5,142,21,145,169
-                byte    0,149,248,202,16,251,169,192,141,30,145,96,72,152,72,138,72,6,254,144,2,230,254
-                byte    162,2,180,251,185,140,3,180,248,37,254,240,1,200,152,157,10,144,202,16,237,104
-                byte    170,104,168,104,44,20,145,64,0,128,136,146,170,218,238,254
 
 
 ;print S1=, S2=, S3=, N4=, P=, L=
@@ -929,9 +948,11 @@ sstring byte 147,13,13,83,49,61,32,32,46,32,32,13, 83,50,61,32,32,46,32,32,13, 8
         byte 36
 
 frameinterval           byte 48        
-fadeouttime             byte 0
-numloopsconst           byte 3
+fadeouttime             byte 255
+numloopsconst           byte 1
 
 
 
 ; auto generated script data goes here
+
+
