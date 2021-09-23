@@ -232,6 +232,8 @@ for n in range(LineCount):
 		print "Song title found!  The title is:", TitleString
 		print ""
 		TitleString=TitleString.upper()
+		if TitleString=="":
+			TitleString=" "
 		break
 #Search for information on song author		
 print "Searching for song author"
@@ -244,6 +246,8 @@ for n in range(LineCount):
 		print "Song author found!  The author is:", AuthorString
 		print ""
 		AuthorString=AuthorString.upper()
+		if AuthorString=="":
+			AuthorString=" "
 		break
 
 #Search for the world "TRACK", which has a value for the number of rows per pattern
