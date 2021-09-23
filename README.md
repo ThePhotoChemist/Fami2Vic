@@ -9,6 +9,8 @@ $python fami2vic.py -i /path/to/text/file.txt
 
 The script will spit out ASM source that can be compiled in CBM Studio.  It will also print out diagnostic information regarding note mapping.  Due to the VIC's 3 square wave voices (S1, S2 and S3 from lowest to highest) each being offset one octave from each other, Square1, Square2 and Triangle from the NES side each require their own pitch offsets to stay at the right pitch.  
 
+If you're compiling for a Commodore 64, use -C64.  Otherwise, it will default to VIC-20 mode.  Most of the following arguments are VIC-20 specific.  
+
 Default configuration maps Square1 to S3, Square2 to S2 and Triangle to S1.  The offsets are -24, -12 and -12.  
 
 Try --swap to change the mapping to Square2 to S3, Square1 to S2, and Triangle to S1.  Default offsets are -12, -24 and -12.
