@@ -1,14 +1,13 @@
 ;Fami2C64 player for THE COMMODORE SIXTY-FUCKING FOUR
 
-; 10 SYS (18432)
+; 10 SYS (2304)
 
 *=$0801
 
-        BYTE    $0E, $08, $0A, $00, $9E, $20, $28,  $31, $38, $34, $33, $32, $29, $00, $00, $00
+        BYTE    $0E, $08, $0A, $00, $9E, $20, $28,  $32, $33, $30, $34, $29, $00, $00, $00
 
 
-
-*=$4800
+*=$0900
 
 defm    mPrint
         LDA #/1
@@ -92,10 +91,10 @@ loopstart
         STA VOLUME
 
         LDA #0
-        STA S31
-        STA S32
-        STA S21
-        STA S22
+        STA SID1ToneLowRegister
+        STA SID1ToneHighRegister
+        STA SID2ToneLowRegister
+        STA SID2ToneHighRegister
 
         LDX #0
         JSR hprint
@@ -122,10 +121,41 @@ loopstart
         STA 54284 ; attack/decay duration Voice 2
         STA 54291 ; attack/decay duration Voice 3
 
-        LDA #240
+        LDA #128
         STA 54278 ;sustain level / release duration Voice 1
         STA 54285 ;sustain level / release duration Voice 2
+
+        LDA #240
         STA 54292 ;sustain level / release duration Voice 3
+
+        LDA #0
+        STA SID1ToneLowRegister
+        STA SID1ToneLowByte
+        STA SID1ToneLowByteLoad
+        STA 1024 ;3072
+        STA SID1ToneHighRegister
+        STA SID1ToneHighByte
+        STA SID1ToneHighByteLoad
+        STA 55296 ;17408
+        STA SID2ToneLowRegister
+        STA SID2ToneLowByte
+        STA SID2ToneLowByteLoad
+        STA 1025 ;3072
+        STA SID2ToneHighRegister
+        STA SID2ToneHighByte
+        STA SID2ToneHighByteLoad
+        STA 55297 ;17408
+        STA SID3ToneLowRegister
+        STA SID3ToneLowByte
+        STA SID3ToneLowByteLoad
+        STA 1026 ;3072
+        STA SID3ToneHighRegister
+        STA SID3ToneHighByte
+        STA SID3ToneHighByteLoad
+        STA 55298 ;17408
+
+
+
 
         
 soundloop
@@ -162,7 +192,6 @@ s3requestnote
         BNE skipnewpatternreq   ;if not 109 then skip the JSR and load in the next note data
 
 newpatternreq
-        ;mPrint 42
         INC patterncounter
         LDX patterncounter
 
@@ -193,17 +222,20 @@ newpatternreq
         LDA s3addrlow 
         STA AddrLow 
         LDA ($AC,x)
+        STA SID1Note
+
+skipnewpatternreq
 
         CMP #108  ; transparent note - keep do not load new tone
         BEQ s3tnote
 
 
-skipnewpatternreq
+        ;LDX SID1Note
         TAX
         JSR LoadToneLow
-        STA s3tonelow
+        STA SID1ToneLowByte
         JSR LoadToneHigh
-        STA s3tonehigh
+        STA SID1ToneHighByte
         LDX #0
 
 s3tnote
@@ -264,15 +296,16 @@ s2requestnote
         LDA s2addrlow ; load in current note index
         STA AddrLow 
         LDA ($AC,x) ;load in s2 note
+        STA SID2Note
 
         CMP #108  ; transparent note - keep do not load new tone
         BEQ s2tnote
 
         TAX
         JSR LoadToneLow
-        STA s2tonelow
+        STA SID2ToneLowByte
         JSR LoadToneHigh
-        STA s2tonehigh
+        STA SID2ToneHighByte
         LDX #0
 
 s2tnote
@@ -322,15 +355,16 @@ s1requestnote
         LDA s1addrlow ; load in current note index
         STA AddrLow 
         LDA ($AC,x) ;load in s1 note
+        STA SID3Note
 
         CMP #108  ; transparent note - keep do not load new tone
         BEQ s1tnote
 
         TAX
         JSR LoadToneLow
-        STA s1tonelow
+        STA SID3ToneLowByte
         JSR LoadToneHigh
-        STA s1tonehigh
+        STA SID3ToneHighByte
         LDX #0
 
 s1tnote
@@ -379,8 +413,14 @@ n4requestnote
         LDA n4addrlow ; load in current note index
         STA AddrLow 
         LDA ($AC,x) ;load in n4 note
-        STA n4tonelow
+        STA n4note
 
+        TAX
+        JSR LoadToneLow
+        STA n4tonelow
+        JSR LoadToneHigh
+        STA n4tonehigh
+        LDX #0
 
         LDA $AC      ;check AddrLow to see if it's about to overflow
         CMP #255
@@ -423,62 +463,11 @@ n4saveaddr
 
 ; ---------- load sound --------- ;
 
+
 loadsound
-        LDA SwapS2S3
-        CMP #1
-        BEQ loadsoundswap
-        
-        LDA s3tonelow
-        STA S31
-        STA 1026 ;3072
-
-        LDA s3tonehigh
-        STA s32
-        STA 55298 ;17408
-
-        LDA s2tonelow
-        STA S21
-        STA 1025
-        LDA s2tonehigh
-        STA S22
-        STA 55297
-        JMP afterswap
-
-loadsoundswap
-        LDA s2tonelow
-        STA S31
-        STA 1026
-
-        LDA s2tonehigh
-        STA s32
-        STA 55298
-
-        LDA s3tonelow
-        STA S21
-        STA 1025
-        LDA s3tonehigh
-        STA S22
-        STA 55297
-
-afterswap
-
-        LDA s1tonelow
-        STA S11
-        STA 1024
-        LDA s1tonehigh
-        STA S12
-        STA 55296
-
-        LDA n4tonelow
-        STA N4
-        STA 55299
-        STA 1027
+        JSR loadsoundjsr
 
 
-        ;LDA 36879
-        ;AND 78
-        ;ORA S32
-        ;STA 36879
 
 ; ---------- sound delay loop --------- ;
       
@@ -530,19 +519,19 @@ sounddelayhigh
 
 displayinfo
 
-        LDA s1tonelow ;2x34/67
+        LDA SID1ToneLowByte
         PrintHex 1107,1108
-        LDA s1tonehigh
+        LDA SID1ToneHighByte
         PrintHex 1110,1111
 
-        LDA s2tonelow
+        LDA SID2ToneLowByte
         PrintHex 1147,1148
-        LDA s2tonehigh
+        LDA SID2ToneHighByte
         PrintHex 1150,1151
 
-        LDA s3tonelow
+        LDA SID3ToneLowByte
         PrintHex 1187,1188
-        LDA s3tonehigh
+        LDA SID3ToneHighByte
         PrintHex 1190,1191
 
         LDA n4tonelow
@@ -556,7 +545,7 @@ displayinfo
         STA sounddelaylowbyte
         ;STA n4
         ;STA n4tonelow
-
+        JSR loadsoundjsr
 
         LDA sounddelayhighbyte
         CMP SpeedHighByte
@@ -614,7 +603,7 @@ s1newnote
 ;     Noise Channel Mute     ;  - Mute after X loops without reseting note duration counter
 n4mutecheck                  ; - This makes the noise sound more like drums would
         LDA n4loopcount
-        CMP #1
+        CMP #0
         BEQ n4mute
         JMP n4newnotecheck
 
@@ -623,6 +612,7 @@ n4mute
         STA N4          ; send 0 to noise voice register
         STA 1027        ; send 0 to noise indicator on the screen
         STA n4tonelow
+        STA n4tonehigh
 
 n4newnotecheck
         LDA n4loopcount
@@ -826,18 +816,196 @@ incaddr
        INC $AD
        RTS
 
+loadsoundjsr
+
+        LDA #32
+        STA 1064
+        STA 1065
+        STA 1066
+
+        LDA SID1ToneHighByte
+        STA SID1ToneHighByteLoad
+        LDA SID1ToneLowByte
+        STA SID1ToneLowByteLoad
+        LDA SID2ToneHighByte
+        STA SID2ToneHighByteLoad
+        LDA SID2ToneLowByte
+        STA SID2ToneLowByteLoad
+        LDA SID3ToneHighByte
+        STA SID3ToneHighByteLoad
+        LDA SID3ToneLowByte
+        STA SID3ToneLowByteLoad
+
+        LDA #65
+        STA SID1Command
+        STA SID2Command
+        LDA #17
+        STA SID3Command   
+
+        LDA #128
+        STA SID1Sustain
+        STA SID2Sustain
+        ;STA 54278 ;sustain level / release duration Voice 1
+        ;STA 54285 ;sustain level / release duration Voice 2
+
+        LDA #240
+        STA SID3Sustain
+        ;STA 54292 ;sustain level / release duration Voice 3
+
+        ;LDA #3            ; uncomment to force noise channel to just the triangle
+        ;STA NoiseRotate
+
+        ;LDA #0           ; uncomment to mute noise channel
+        ;STA n4tonehigh
+
+noisecheck
+        LDA n4tonehigh
+        CMP #0
+        BEQ LoadSIDhelp  ; if no noise note, go straight to SID sound parameters
+
+        LDA SID1ToneHighByte ; check to see if SID1 is not currently playing a note
+        CMP #0
+        BEQ SID1ToNoise 
+
+        LDA SID2ToneHighByte ; check to see if SID2 is not currently playing a note
+        CMP #0
+        BEQ SID2ToNoise
+
+        LDA SID3ToneHighByte ; check to see if SID3 is not currently playing a note
+        CMP #0
+        BEQ SID3ToNoise
+
+        LDA NoiseRotate
+        CMP #1
+        BEQ SID1ToNoise
+        CMP #2
+        BEQ SID2ToNoise
+        CMP #3
+        BEQ SID3ToNoise
+        JMP LoadSID
+
+LoadSIDhelp
+        JMP LoadSID
+
+SID1ToNoise
+        LDA #129
+        STA SID1Command
+        LDA n4tonelow
+        STA SID1ToneLowByteLoad
+        LDA n4tonehigh
+        STA SID1ToneHighByteLoad   
+        INC NoiseRotate
+        LDA #81
+        STA 1064
+        LDA #128
+        STA SID1Sustain
+
+        JMP LoadSID
+SID2ToNoise
+        LDA #129
+        STA SID2Command
+        LDA n4tonelow
+        STA SID2ToneLowByteLoad
+        LDA n4tonehigh
+        STA SID2ToneHighByteLoad 
+        LDA #3
+        STA NoiseRotate
+        LDA #81
+        STA 1065
+
+        LDA #128
+        STA SID2Sustain
+        JMP LoadSID
+SID3ToNoise
+        LDA #129
+        STA SID3Command
+        LDA n4tonelow
+        STA SID3ToneLowByteLoad
+        LDA n4tonehigh
+        STA SID3ToneHighByteLoad 
+        LDA #81
+        STA 1066
+
+        LDA #240
+        STA SID3Sustain
+        INC NoiseRotate
+LoadSID
+
+        LDA noiserotate
+        CMP #4
+        BNE LoadSID1
+        LDA #1
+        STA noiserotate
+
+LoadSID1 
+        LDA SID1Command
+        STA 54276
+        LDA SID1ToneLowByteLoad
+        STA SID1ToneLowRegister
+        STA 1024 ;3072
+        LDA SID1Sustain
+        STA 54278
+
+        LDA SID1ToneHighByteLoad
+        STA SID1ToneHighRegister
+        STA 55296 ;17408
+
+        LDA SID2Command
+        STA 54283
+        LDA SID2ToneLowByteLoad
+        STA SID2ToneLowRegister
+        STA 1025
+        LDA SID2ToneHighByteLoad
+        STA SID2ToneHighRegister
+        STA 55297
+        LDA SID2Sustain
+        STA 54285
+
+        LDA SID3Command
+        STA 54290
+        LDA SID3ToneLowByteLoad
+        STA SID3ToneLowRegister
+        STA 1026
+        LDA SID3ToneHighByteLoad
+        STA SID3ToneHighRegister
+        STA 55298
+        LDA SID3Sustain
+        STA 54292
+
+        LDA n4tonelow
+        STA N4
+        STA 55299
+        STA 1027
+        RTS
+
+
+SingleKeyDelayJSR
+        LDA 203
+        STA keydelaycurrent
+        CMP #10
+        BNE SingleKeyDelayLoop
+        LDA keydelayold
+        CMP #64
+        BEQ SingleKeyDelayRTS
+SingleKeyDelayLoop
+        LDA keydelaycurrent
+        STA keydelayold
+        JMP SingleKeyDelayJSR
+SingleKeyDelayRTS
+        RTS
 
 
 PRINT_CHAR = $FFD2
+PRINT_VALUE = $BDCD
 
-S11=54286
-S12=54287
+SID3ToneLowRegister=54286
+SID3ToneHighRegister=54287
 
-S21=54279
-S22=54280
+SID2ToneLowRegister=54279
+SID2ToneHighRegister=54280
 
-S31=54272
-S32=54273
+SID1ToneLowRegister=54272
+SID1ToneHighRegister=54273
 
 
 N4=17670
@@ -881,32 +1049,53 @@ keypressold     byte 0
 
 totalframecount byte 0
 
+SID1Command     byte 0
+SID2Command     byte 0
+SID3Command     byte 0
+
+SID1Sustain     byte 0
+SID2Sustain     byte 0
+SID3Sustain    byte 0
+
 s3request       byte 0
 s3notepos       byte 0
-s3tonelow       byte 0
-s3tonehigh      byte 0
+SID1ToneLowByte       byte 0
+SID1ToneHighByte      byte 0
+SID1ToneLowByteLoad       byte 0
+SID1ToneHighByteLoad      byte 0
 s3duration      byte 0
 s3loopcount     byte 0
 s3addrhigh      byte 0
 s3addrlow       byte 0
+SID1Note        byte 0
+
+keydelayold     byte 0
+keydelaycurrent byte 0
+
 
 s2request       byte 0
 s2notepos       byte 0
-s2tonelow       byte 0
-s2tonehigh      byte 0
+SID2ToneLowByte       byte 0
+SID2ToneLowByteLoad     byte 0
+SID2ToneHighByte      byte 0
+SID2ToneHighByteLoad     byte 0
 s2duration      byte 0
 s2loopcount     byte 0
 s2addrhigh      byte 0
 s2addrlow       byte 0
+SID2Note        byte 0
 
 s1request       byte 0
 s1notepos       byte 0
-s1tonelow       byte 0
-s1tonehigh      byte 0
+SID3ToneLowByte       byte 0
+SID3ToneHighByte      byte 0
+SID3ToneLowByteLoad       byte 0
+SID3ToneHighByteLoad      byte 0
 s1duration      byte 0
 s1loopcount     byte 0
 s1addrhigh      byte 0
 s1addrlow       byte 0
+SID3Note        byte 0
 
 n4request       byte 0
 n4notepos       byte 0
@@ -916,6 +1105,8 @@ n4duration      byte 0
 n4loopcount     byte 0
 n4addrhigh      byte 0
 n4addrlow       byte 0
+n4note          byte 0
+noiserotate     byte 1
 
 numloops        byte 0
 
@@ -923,10 +1114,10 @@ patterncounter  byte 0
 
 Tempo   byte 0
 TempoConst      byte 0
-NTSCSpeed       byte 165 ;67 w/ PWM, 146 w/o 
-PALSpeed        byte 185 ;73 w/ PWM, 160 w/o
+NTSCSpeed       byte 52 ;67 w/ PWM, 146 w/o 
+PALSpeed        byte 52 ;73 w/ PWM, 160 w/o
 
-SpeedHighByte   byte 1
+SpeedHighByte   byte 4
 
 ;PAL Tones
 PALToneHighByte     byte 1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,4,4,4,4,5,5,5,6,6,6,7,7,8,8,9,9,10,10,11,12,13,13,14,15,16,17,18,19,20,21,23,24,26,27,29,31,32,34,36,39,41,43,46,49,52,55,58,62,65,69,73,78,82,87,92,98,104,110,117,124,131,139,147,156,165,175,185,196,208,221,234,248,0,0,0
@@ -936,23 +1127,11 @@ PALToneLowByte    byte 22,39,57,75,95,116,138,161,186,212,240,14,45,78,113,150,1
 NTSCToneHighByte     byte 1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,4,4,4,4,5,5,5,6,6,7,7,7,8,8,9,9,10,11,11,12,13,14,14,15,16,17,18,19,21,22,23,25,26,28,29,31,33,35,37,39,42,44,47,50,53,56,59,63,67,71,75,79,84,89,94,100,106,112,119,126,134,142,150,159,168,179,189,200,212,225,238,253,0,0
 NTSCToneLowByte    byte 12,28,45,63,82,102,123,146,170,195,222,250,24,56,90,126,164,204,247,36,84,134,188,245,49,113,180,252,72,152,237,72,167,12,120,233,98,226,105,248,144,48,219,143,78,25,240,211,196,195,209,240,31,97,182,30,157,50,223,166,136,134,163,224,63,194,107,61,58,100,190,76,15,12,70,191,125,132,214,122,115,200,125,151,30,24,139,127,251,7,172,244,231,143,249,47,0,0
 
-
-
-;print S1=, S2=, S3=, N4=, P=, L=
-sstring byte 147,13,13,83,49,61,32,32,46,32,32,13, 83,50,61,32,32,46,32,32,13, 83,51,61,32,32,46,32,32,13, 78,52,61,32,32,13, 32,80,61,32,32,13, 32,76,61,32,32,13,13
-        null 'AUTHOR'
-        byte 13
-        null 'TITLE'
-        byte 13
-;terminate string printing routine
-        byte 36
-
 frameinterval           byte 48        
 fadeouttime             byte 255
 numloopsconst           byte 1
 
-
+UseNoise                byte 1
 
 ; auto generated script data goes here
-
 

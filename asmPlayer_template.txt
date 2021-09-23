@@ -3,6 +3,7 @@
 
 ; 10 SYS (4645)
 
+
 *=$1201
 
         BYTE    $0E, $12, $0A, $00, $9E, $20, $28,  $34, $36, $34, $35, $29, $00, $00, $00
@@ -26,23 +27,14 @@ defm    PrintValue
                 LDX #0
                 endm
 
-defm    PrintHex ; print hex value to a screen location
-        pha
-        lsr
-        lsr
-        lsr
-        lsr
-        tax
-        lda convtable,x
-        sta /1
-        pla
-        and #$0f
-        tax
-        lda convtable,x
-        sta /2
-        LDX #0
-        endm
 
+
+defm    LoadHex
+        LDA Hex1
+        STA /1
+        LDA Hex2
+        STA /2
+        endm
 
 start   
         LDA numloopsconst
@@ -103,10 +95,17 @@ loopstart
         LDX #0
         JSR hprint
         LDA numloops
-        PrintHex 4253,4254
+        JSR PrintHexJSR
+        LoadHex 4253,4254
         
         
-        
+        LDA #0
+        STA s1tonelow
+        STA s1tonehigh
+        STA s2tonelow
+        STA s2tonehigh
+        STA s3tonelow
+        STA s3tonehigh
 
 soundloop
 
@@ -480,8 +479,8 @@ pwmcheck
        
 
 pwmoff
-      LDA #0
-      ;LDA n4tonelow
+      ;LDA #0
+      LDA n4tonelow
       STA n4
       STA pwmval 
       JMP pwmdone
@@ -511,25 +510,33 @@ sounddelayhigh
 displayinfo
 
         LDA s1tonelow
-        PrintHex 4143,4144
+        JSR PrintHexJSR
+        LoadHex 4143,4144
         LDA s1tonehigh
-        PrintHex 4146,4147
+        JSR PrintHexJSR
+        LoadHex 4146,4147
 
         LDA s2tonelow
-        PrintHex 4165,4166
+        JSR PrintHexJSR
+        LoadHex 4165,4166
         LDA s2tonehigh
-        PrintHex 4168,4169
+        JSR PrintHexJSR
+        LoadHex 4168,4169
 
         LDA s3tonelow
-        PrintHex 4187,4188
+        JSR PrintHexJSR
+        LoadHex 4187,4188
         LDA s3tonehigh
-        PrintHex 4190,4191
+        JSR PrintHexJSR
+        LoadHex 4190,4191
 
         LDA n4tonelow
-        PrintHex 4209,4210
+        JSR PrintHexJSR
+        LoadHex 4209,4210
 
         LDA patterncounter
-        PrintHex 4231,4232
+        JSR PrintHexJSR
+        LoadHex 4231,4232
 
 
         LDA #0
@@ -702,7 +709,8 @@ keyloopup
         BNE afterkeycheckhelp
         INC numloops
         LDA numloops
-        PrintHex 4253,4254
+        JSR PrintHexJSR
+        LoadHex 4253,4254
         JMP afterkeycheck
 
 keyloopdown
@@ -711,7 +719,8 @@ keyloopdown
         BNE afterkeycheckhelp
         DEC numloops
         LDA numloops
-        PrintHex 4253,4254
+        JSR PrintHexJSR
+        LoadHex 4253,4254
         JMP afterkeycheck
 
 afterkeycheckhelp
@@ -721,7 +730,8 @@ loophelp
         DEC numloops
         LDA numloops
         DEC CURRENTSONG
-        PrintHex 4253,4254
+        JSR PrintHexJSR
+        LoadHex 4253,4254
         LDA LoopPoint
         STA patterncounter
         JMP newpatternreq
@@ -806,6 +816,22 @@ incaddr
        INC $AD
        RTS
 
+PrintHexJSR ; print hex value to a screen location
+                pha
+                lsr
+                lsr
+                lsr
+                lsr
+                tax
+                lda convtable,x
+                sta Hex1
+                pla
+                and #$0f
+                tax
+                lda convtable,x
+                sta Hex2
+                LDX #0
+                RTS
 
 
 PRINT_CHAR = $FFD2
@@ -892,6 +918,9 @@ n4loopcount     byte 0
 n4addrhigh      byte 0
 n4addrlow       byte 0
 
+Hex1            byte 0
+Hex2            byte 0
+
 numloops        byte 0
 
 patterncounter  byte 0
@@ -900,8 +929,8 @@ VOLUME=36878
 
 Tempo   byte 0
 TempoConst      byte 0
-NTSCSpeed       byte 67 ;67 w/ PWM, 146 w/o 
-PALSpeed        byte 73 ;73 w/ PWM, 160 w/o
+NTSCSpeed       byte 63 ;67 w/ PWM, 146 w/o 
+PALSpeed        byte 68 ;73 w/ PWM, 160 w/o
 
 SpeedHighByte   byte 1
 
@@ -918,16 +947,6 @@ NTSCToneHighByte    byte 7,6,1,2,0,4,5,4,0,3,4,2,7,3,5,5,4,2,6,2,4,5,6,5,4,1,6,3
                 byte    162,2,180,251,185,140,3,180,248,37,254,240,1,200,152,157,10,144,202,16,237,104
                 byte    170,104,168,104,44,20,145,64,0,128,136,146,170,218,238,254
 
-
-;print S1=, S2=, S3=, N4=, P=, L=
-sstring byte 147,13,13,83,49,61,32,32,46,32,32,13, 83,50,61,32,32,46,32,32,13, 83,51,61,32,32,46,32,32,13, 78,52,61,32,32,13, 32,80,61,32,32,13, 32,76,61,32,32,13,13
-        null 'AUTHOR'
-        byte 13
-        null 'TITLE'
-        byte 13
-;terminate string printing routine
-        byte 36
-
 frameinterval           byte 48        
 fadeouttime             byte 0
 numloopsconst           byte 3
@@ -935,3 +954,4 @@ numloopsconst           byte 3
 
 
 ; auto generated script data goes here
+

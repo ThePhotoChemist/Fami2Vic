@@ -126,11 +126,13 @@ if c64mode==1:
 			
 		
 if args.datastart==None and c64mode==0:
-	print "No data start address specified, using 2110 (HEX)"
 	DataStartAddress="2110"
+	print "No data start address specified, using",DataStartAddress,"(HEX)"
+	print ""
 elif args.datastart==None and c64mode==1:
-	print "No data start address specified, using 5110 (HEX)"
-	DataStartAddress="5400"
+	DataStartAddress="1800"
+	print "No data start address specified, using",DataStartAddress,"(HEX)"
+	print ""
 else:
 	DataStartAddress=args.datastart
 		
@@ -138,46 +140,56 @@ DataStartAddrDec=int(DataStartAddress,16)
 
 if args.volume==None:
 	print "No Voice Channel Volume Cutoff Specified, volume cutoff ignored"
+	print ""
 	VolumeCutoff=-1
 else:
 	VolumeCutoff=int(args.volume)
 	
 if args.noisevolume==None:
 	print "No Noise Channel Volume Cutoff Specified, defaulting to 8"
+	print ""
 	NoiseVolumeCutoff=8
 else:
 	NoiseVolumeCutoff=int(args.noisevolume)
 
 print "DataStartAddrDec is", DataStartAddrDec
+print ""
 
+#Read in file -i and -o arguments into variables
 input_file=args.input_file
 output_file=args.output_file
 
-with open(input_file, 'r') as my_file:
+with open(input_file, 'r') as my_file: #search for .txt file and count the number of lines
 	LineCount = len(my_file.readlines(  ))
 	
-with open(input_file, 'r') as f:
+with open(input_file, 'r') as f: #search for .txt file and import all into an array, separated by each line
 	Lines = f.read().splitlines()	
 
+#Set strings for comparing in the txt document
 BlankLine="..."
 StopNote1="---"
 StopNote2="==="
 BlankVol="."
 
+#declare variables
 Square1VolMuted=0
 Square1LastMutedNote=0
 Square2VolMuted=0
 Square2LastMutedNote=0
 TriangleVolMuted=0
 TriangleLastMutedNote=0
+NoiseVolMuted=0
+NoiseLastMutedNote=0
 
-
+#Not used
 IgnoreUnderflowErrors=args.ignoreall
 IgnoreOverflowErrors=args.ignoreall
 
+#Pipe in command line arguments
 CorrectUnderflowErrors=args.correctunderflow
 CorrectOverflowErrors=args.correctoverflow
 
+#declare variables
 NoiseMutedNotes=0
 TriangleMutedNotes=0
 Square2MutedNotes=0
@@ -196,19 +208,45 @@ NoiseNumOverNotes=0
 NoiseNumUnderNotes=0
 NoiseNumCorrectedNotes=0
 
-
+#Set initial loop point to 0, in case the song doesn't have one
 LoopPoint=0
 
+#A list of all potential notes that can be found in the Famitracker export
 ABCList=["C0","C#0","D0","D#0","E0","F0","F#0","G0","G#0","A0","A#0","B0","C1","C#1","D1","D#1","E1","F1","F#1","G1","G#1","A1","A#1","B1","C2","C#2","D2","D#2","E2","F2","F#2","G2","G#2","A2","A#2","B2","C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4","C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5","C6","C#6","D6","D#6","E6","F6","F#6","G6","G#6","A6","A#6","B6","C7","C#7","D7","D#7","E7","F7","F#7","G7","G#7","A7","A#7","B7",108]
+
+#A list of all potential percussion notes 
 PercList=["0#","1#","2#","3#","4#","5#","6#","7#","8#","9#","A#","B#","C#","D#","E#","F#"]
 
-
-PercTone=[135,147,151,159,163,167,173,179,183,187,191,195,199,201,203,207,209,212,215,217,219,221,223,225,227,228,229,231,232,233,235,236,237,238,239,240,241]
-
-
-Lines.pop() #Remove last two lines from file
+#Remove extra junk at the end of the txt file import
+Lines.pop() 
 Lines.pop()
 
+#Search for information on song title
+print "Searching for song title"
+for n in range(LineCount):
+	CurRowString=Lines[n]
+	CurRowTest=CurRowString[0:5]
+	if CurRowTest=="TITLE":
+		TitleList = CurRowString.split('"')[1::2] #split the string and extract text from between the qutotes
+		TitleString=TitleList[0]
+		print "Song title found!  The title is:", TitleString
+		print ""
+		TitleString=TitleString.upper()
+		break
+#Search for information on song author		
+print "Searching for song author"
+for n in range(LineCount):
+	CurRowString=Lines[n]
+	CurRowTest=CurRowString[0:6]
+	if CurRowTest=="AUTHOR":
+		AuthorList = CurRowString.split('"')[1::2] #split the string and extract text from between the qutotes
+		AuthorString=AuthorList[0]
+		print "Song author found!  The author is:", AuthorString
+		print ""
+		AuthorString=AuthorString.upper()
+		break
+
+#Search for the world "TRACK", which has a value for the number of rows per pattern
 print "Searching for number of rows per pattern"
 for n in range(LineCount):
 	CurRowString=Lines[n]
@@ -216,13 +254,15 @@ for n in range(LineCount):
 	if CurRowTest=="TRACK":
 		BeatRow=n
 		RowsPerPattern=int(CurRowString[6:9])
-		break	
+		break
+		
 print "row information found on line ", BeatRow
 print "There are ",RowsPerPattern, "rows per pattern"
 PatternSize=RowsPerPattern+2
 print "Total Pattern Size (with headers) is ",PatternSize
 print ""
 
+#Find where the pattern information starts
 print "Searching for PATTERN 00"
 for n in range(LineCount):
 	CurRowString=Lines[n]
@@ -230,8 +270,10 @@ for n in range(LineCount):
 	if CurRowTest=="PATTERN 00":
 		DataStartRow=n-1
 		break
+		
 print "Pattern data starts on line ",DataStartRow	
 
+#Calculate the total number of patterns
 TotalLines=len(Lines)
 TotalDataLines=(TotalLines-DataStartRow)
 print "There are ",TotalDataLines," lines of data"
@@ -239,13 +281,15 @@ TotalPatterns=TotalDataLines/PatternSize
 print "There are a total of ",TotalPatterns," total patterns"
 print ""	
 
+#Search for the OORDER information
 print "Searching for ORDER information..."
 for n in range(LineCount):
 	CurRowString=Lines[n]
 	CurRowTest=CurRowString[0:5]
 	if CurRowTest=="ORDER":
 		OrderStartRow=n
-		break	
+		break
+		
 print "ORDER information starts on row",OrderStartRow
 for n in range(LineCount):
 	CurRowString=Lines[n+OrderStartRow]
@@ -253,11 +297,13 @@ for n in range(LineCount):
 	if CurRowTest=="":
 		OrderEndRow=n+OrderStartRow-1
 		break	
+
 print "ORDER information ends on row",OrderEndRow
 TotalOrders=OrderEndRow-OrderStartRow+1
 print "There are ",TotalOrders," total ORDER rows"
 print ""
 
+#Figure out how many columns there are per track by finding out if effects are enabled on each voice
 print "Searching for information about effects per column..."
 for n in range(LineCount):
 	CurRowString=Lines[n]
@@ -279,10 +325,12 @@ NoiseColumnStart=TriangleColumnStart+15+4*(TriangleColumns-1)
 print "Number of columns per channel.  Square1:",Square1Columns," Square2:",Square2Columns," Triangle Columns:",TriangleColumns," Noise Columns:",NoiseColumns
 print "Square1 starts at:",Square1ColumnStart," Square2 starts at:",Square2ColumnStart," Triangle starts at:",TriangleColumnStart," Noise starts at:",NoiseColumnStart
 
+#Declare Order arrays
 Square1Order=[]
 Square2Order=[]
 TriangleOrder=[]
 NoiseOrder=[]
+
 
 print "Extracting Order information into individual voice lists..."
 for n in range(TotalOrders):
@@ -300,19 +348,20 @@ for n in range(TotalOrders):
 	NoiseCurOrder=CurRowString[20:22]
 	NoiseOrder.append(NoiseCurOrder)
 	
-print "Here is the completed Square1 Order List"
-print Square1Order
+#print "Here is the completed Square1 Order List"
+#print Square1Order
 
-print "Here is the completed Square2 Order List"
-print Square2Order
+#print "Here is the completed Square2 Order List"
+#print Square2Order
 
-print "Here is the completed Triangle Order List"
-print TriangleOrder
+#print "Here is the completed Triangle Order List"
+#print TriangleOrder
 
-print "Here is the completed Noise Order List"
-print NoiseOrder
-print ""
+#print "Here is the completed Noise Order List"
+#print NoiseOrder
+#print ""
 
+#Declare Variables
 
 Square1LastFrame=0
 Square2LastFrame=0
@@ -350,20 +399,18 @@ Square2Pattern = [[] for _ in range(TotalPatterns)]
 TrianglePattern=[[] for _ in range(TotalPatterns)]
 NoisePattern=[[] for _ in range(TotalPatterns)]
 
+#Begin searching for data in each pattern and compiling it into an array
 print "Now let's start extracting pattern data"
 
 for n in range(TotalPatterns):
-
-
-	
 	for i in range(RowsPerPattern):
 
 
 		CurRowString=Lines[n*PatternSize+DataStartRow+i+2]
 		
-		Square1CurString=CurRowString[Square1ColumnStart:Square1ColumnStart+3]
-		Square1Cmd=CurRowString[Square1ColumnStart+9:Square1ColumnStart+12]
-		Square1Vol=CurRowString[Square1ColumnStart+7:Square1ColumnStart+8]
+		Square1CurString=CurRowString[Square1ColumnStart:Square1ColumnStart+3] #String of the current row
+		Square1Cmd=CurRowString[Square1ColumnStart+9:Square1ColumnStart+12]    #Current Command
+		Square1Vol=CurRowString[Square1ColumnStart+7:Square1ColumnStart+8]	   #Current Volume
 		
 		Square2CurString=CurRowString[Square2ColumnStart:Square2ColumnStart+3]
 		Square2Cmd=CurRowString[Square2ColumnStart+9:Square2ColumnStart+12]
@@ -379,31 +426,27 @@ for n in range(TotalPatterns):
 
 ###### Calculate Square1 Data ######	
 		if Square1EndedOnD00==0:	
-			if i==0 and Square1CurString==BlankLine:  #Set as "Stop Note" if no data on the first line
+			if i==0 and Square1CurString==BlankLine:  #Set as "Transparent Note" if no data on the first line
 				if Square1Vol!=BlankVol:
 					Square1VolDec=int(Square1Vol,16)
 					if (Square1VolMuted==0 and Square1VolDec<VolumeCutoff) or (Square1VolMuted==1 and Square1VolDec>=VolumeCutoff):
 						print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
 					else:
-						#Square1Pattern[n].append(Square1LastNote)
 						Square1Pattern[n].append(108)						
-						#print "No beginning note detected (with volume parameter), appending code 108"
 				else:
-					#Square1Pattern[n].append(Square1LastNote)
 					Square1Pattern[n].append(108)
-					#print "No beginning note detected (with no volume), appending code 108"
 				Square1LastFrame=i
 				
-			if Square1CurString!=BlankLine:
-				Square1Note=Square1CurString.replace(".","")
-				if Square1Note!=StopNote1 and Square1Note!=StopNote2:
+			if Square1CurString!=BlankLine:  #If line isn't blank
+				Square1Note=Square1CurString.replace(".","")  #find note string
+				if Square1Note!=StopNote1 and Square1Note!=StopNote2:  #compare and see if it's a stop note or a regular note
 					Square1Note=Square1Note.replace("-","")
 					if i>0:				#append duration value only if this isn't the first note in the list
-						Square1NoteDuration=i-Square1LastFrame
-						Square1Pattern[n].append(Square1NoteDuration-1)
-					Square1Pattern[n].append(Square1Note)
-					Square1LastFrame=i
-					
+						Square1NoteDuration=i-Square1LastFrame   #calculate duration of the previous note
+						Square1Pattern[n].append(Square1NoteDuration-1)   #add the duration into the pattern list
+					Square1Pattern[n].append(Square1Note)			#add new note into the pattern list
+					Square1LastFrame=i			#reset duration counter
+						
 					Square1LastNote=Square1Note
 					Square1VolMuted=0
 
@@ -430,7 +473,6 @@ for n in range(TotalPatterns):
 					Square1LastFrame=i
 					Square1LastNote=mute_note
 					
-					Square1VolMuted=0	
 #					print "Found volume cutoff (",Square1VolDec,") at Pattern",n,", row",i,".  Muting note",Square1LastMutedNote,"duration:",Square1NoteDuration
 					Square1VolMuted=1
 									
@@ -607,11 +649,12 @@ for n in range(TotalPatterns):
 					if i>0:				#append duration value only if this isn't the first note in the list
 						NoiseNoteDuration=i-NoiseLastFrame
 						NoisePattern[n].append(NoiseNoteDuration-1)
+						
 					NoisePattern[n].append(NoiseNote)
 					NoiseLastFrame=i
 					
 					NoiseLastNote=NoiseNote
-					NoiseVolMuted=0
+					#NoiseVolMuted=0
 					
 				if (NoiseNote==StopNote1) or (NoiseNote==StopNote2):
 					if i>0:
@@ -620,7 +663,7 @@ for n in range(TotalPatterns):
 					NoisePattern[n].append(mute_note)
 					NoiseLastNote=mute_note
 					NoiseLastFrame=i
-					NoiseVolMuted=0
+					#NoiseVolMuted=0
 					
 					
 			###### Mute/Unmute notes based on volume cutoff ##########					
@@ -714,6 +757,8 @@ for n in range(TotalPatterns):
 	TriangleEndedOnD00=0
 	NoiseEndedOnD00=0
 	
+print "All pattern data extracted successfully!"
+	
 	
 #############################################	
 ######## Build out note data for VIC ########
@@ -772,7 +817,7 @@ for n in range(TotalOrders):
 		s3addr=hex(DataStartAddrDec)
 		s3addrhighlist.append("$"+s3addr[2:4])
 		s3addrlowlist.append("$"+s3addr[4:6])
-		buildstr="; S3 Pattern " + str(CurrentOrder)
+		buildstr="; S3 Pattern " + str(CurrentOrder)  + " " + s3addr
 		program_data_out.append(buildstr)
 		
 		
@@ -877,7 +922,7 @@ for n in range(TotalOrders):
 		S2addr=hex(DataStartAddrDec)
 		S2addrhighlist.append("$"+S2addr[2:4])
 		S2addrlowlist.append("$"+S2addr[4:6])
-		buildstr="; S2 Pattern " + str(CurrentOrder)
+		buildstr="; S2 Pattern " + str(CurrentOrder) + " " + S2addr
 		program_data_out.append(buildstr)
 		
 		
@@ -1079,7 +1124,7 @@ for n in range(TotalOrders):
 		N4addr=hex(DataStartAddrDec)
 		N4addrhighlist.append("$"+N4addr[2:4])
 		N4addrlowlist.append("$"+N4addr[4:6])
-		buildstr="; N4 Pattern " + str(CurrentOrder)
+		buildstr="; N4 Pattern " + str(CurrentOrder) + " " + N4addr
 		program_data_out.append(buildstr)
 #		print "Current Order:",CurrentOrder,"Current Note:",CurrentNoteEng
 		
@@ -1088,16 +1133,27 @@ for n in range(TotalOrders):
 			CurrentDuration=CurrentPattern[i*2+1]
 			
 			if ((CurrentNoteEng != mute_note)):  #Normal note positions
-				CurrentNotePos=PercList.index(CurrentNoteEng)
-				Tone=CurrentNotePos*8+128
-				if Tone>=256:
-					Tone=255
-				buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 low and duration"
+				if c64mode==0:
+					CurrentNotePos=PercList.index(CurrentNoteEng)
+					Tone=CurrentNotePos*8+128
+					if Tone>=256:
+						Tone=255
+					buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 low and duration"
+					program_data_out.append(buildstr)
+				else:
+					CurrentNotePos=PercList.index(CurrentNoteEng)
+					Tone=CurrentNotePos*6
+					buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 note position"
+					program_data_out.append(buildstr)
+
+			if CurrentNoteEng==mute_note and c64mode==0:		#Stop Code
+				Tone=0
+				buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 mute and duration"
 				program_data_out.append(buildstr)
-				
-			if CurrentNoteEng==mute_note:		#Stop Code
-				Tone=0	
-				buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 low and duration"
+			
+			if CurrentNoteEng==mute_note and c64mode==1:		#Stop Code
+				Tone=97
+				buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 mute and duration"
 				program_data_out.append(buildstr)
 					
 			DataStartAddrDec=DataStartAddrDec+2
@@ -1110,7 +1166,12 @@ for n in range(TotalOrders):
 		n4Orders.append(CurrentOrder)
 		N4usedaddresseshigh.append("$"+N4addr[2:4])
 		N4usedaddresseslow.append("$"+N4addr[4:6])
+		
 
+VicPlayerHeaderString=";print S1=, S2=, S3=, N4=, P=, L=\nsstring byte 147,13,13,83,49,61,32,32,46,32,32,13, 83,50,61,32,32,46,32,32,13, 83,51,61,32,32,46,32,32,13, 78,52,61,32,32,13, 32,80,61,32,32,13, 32,76,61,32,32,13,13\n        null 'AUTHORXX'\n        byte 13\n        null 'TITLEXX'\n        byte 13\n;terminate string printing routine\n        byte 36"
+
+VicPlayerHeaderString=VicPlayerHeaderString.replace("AUTHORXX",AuthorString)
+VicPlayerHeaderString=VicPlayerHeaderString.replace("TITLEXX",TitleString)
 
 address_header_out.append("SwapS2S3        byte " + str(SwapS2S3))
 
@@ -1188,6 +1249,7 @@ if args.full and c64mode==1:
 	
 program_out=program_out + address_header_out
 program_out=program_out+program_data_out
+program_out.append(VicPlayerHeaderString)
 
 print "S3 Order List:",s3Orders
 print "S2 Order List:",s2Orders
@@ -1210,10 +1272,11 @@ if TriangleMutedNotes:
 	print "Offset on Triangle caused some notes to be muted (",TriangleNumUnderNotes,"due to underflow and",TriangleNumOverNotes,"due to overflow)"
 if TriangleNumCorrectedNotes>0:
 	print TriangleNumCorrectedNotes,"notes in Triangle were adjusted"
-
+print ""
 			
 with open(output_file, 'w') as f:
 			for item in program_out:
 				print >> f, item
 	
 
+print "Conversion complete!  Data was written to",output_file
