@@ -59,8 +59,8 @@ load10bitofr
         LDA 10bitofr,x
         STA 832,x
         INX
-        TXA
-        CMP #84
+        ;TXA
+        CPX #84
         BNE load10bitofr
         JSR 832
 
@@ -403,10 +403,6 @@ n4saveaddr
 ; ---------- load sound --------- ;
 
 loadsound
-        LDA SwapS2S3
-        CMP #1
-        BEQ loadsoundswap
-        
         LDA s3tonelow
         STA S31
         STA 4098
@@ -421,25 +417,6 @@ loadsound
         LDA s2tonehigh
         STA S22
         STA 37889
-        JMP afterswap
-
-loadsoundswap
-        LDA s2tonelow
-        STA S31
-        STA 4098
-
-        LDA s2tonehigh
-        STA s32
-        STA 37890
-
-        LDA s3tonelow
-        STA S21
-        STA 4097
-        LDA s3tonehigh
-        STA S22
-        STA 37889
-
-afterswap
 
         LDA s1tonelow
         STA S11
@@ -757,6 +734,7 @@ exit
         STA 37150  ; shut down 10-bit-ofr oscillator code, since it stops the VIC from loading new programs
         RTS
 
+;################
 LoadToneLow
         LDA 60900
         CMP #12 ; 5=NTSC, 12=PAL
@@ -777,6 +755,7 @@ LoadToneHighPAL
         LDA PALToneHighByte,x
         RTS
 
+;################
 ;print header info
 hprint  LDA sstring,X
         CMP #36
@@ -788,6 +767,7 @@ hexit   LDX #0
         RTS
 
 
+;################
 fadeout
         LDA numloops
         CMP #0
@@ -810,12 +790,14 @@ clearloops
         STA numloops
         JMP incexit
 
+;################
 incaddr
        LDA #0
        STA $AC
        INC $AD
        RTS
 
+;################
 PrintHexJSR ; print hex value to a screen location
                 pha
                 lsr
@@ -832,7 +814,7 @@ PrintHexJSR ; print hex value to a screen location
                 sta Hex2
                 LDX #0
                 RTS
-
+;#################
 
 PRINT_CHAR = $FFD2
 
@@ -954,4 +936,5 @@ numloopsconst           byte 3
 
 
 ; auto generated script data goes here
+
 

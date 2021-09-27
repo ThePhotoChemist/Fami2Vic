@@ -130,7 +130,7 @@ if args.datastart==None and c64mode==0:
 	print "No data start address specified, using",DataStartAddress,"(HEX)"
 	print ""
 elif args.datastart==None and c64mode==1:
-	DataStartAddress="1800"
+	DataStartAddress="1350"
 	print "No data start address specified, using",DataStartAddress,"(HEX)"
 	print ""
 else:
@@ -146,9 +146,9 @@ else:
 	VolumeCutoff=int(args.volume)
 	
 if args.noisevolume==None:
-	print "No Noise Channel Volume Cutoff Specified, defaulting to 8"
+	NoiseVolumeCutoff=0
+	print "No Noise Channel Volume Cutoff Specified, defaulting to",NoiseVolumeCutoff
 	print ""
-	NoiseVolumeCutoff=8
 else:
 	NoiseVolumeCutoff=int(args.noisevolume)
 
@@ -170,6 +170,10 @@ BlankLine="..."
 StopNote1="---"
 StopNote2="==="
 BlankVol="."
+
+Square1VolumeCutoff=VolumeCutoff
+Square2VolumeCutoff=VolumeCutoff
+TriangleVolumeCutoff=VolumeCutoff
 
 #declare variables
 Square1VolMuted=0
@@ -428,253 +432,485 @@ for n in range(TotalPatterns):
 		NoiseCmd=CurRowString[NoiseColumnStart+9:NoiseColumnStart+12]
 		NoiseVol=CurRowString[NoiseColumnStart+7:NoiseColumnStart+8]
 
-###### Calculate Square1 Data ######	
+	###### Calculate Square1 Data ######
 		if Square1EndedOnD00==0:	
-			if i==0 and Square1CurString==BlankLine:  #Set as "Transparent Note" if no data on the first line
+			if i==0 and Square1CurString==BlankLine:  #Set as "Stop Note" if no data on the first line
+			
 				if Square1Vol!=BlankVol:
 					Square1VolDec=int(Square1Vol,16)
-					if (Square1VolMuted==0 and Square1VolDec<VolumeCutoff) or (Square1VolMuted==1 and Square1VolDec>=VolumeCutoff):
-						print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
+					if (Square1VolMuted==0 and Square1VolDec<Square1VolumeCutoff):
+						#print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
+						Square1Pattern[n].append(108)
+						Square1VolMuted=1
+					elif (Square1VolMuted==1 and Square1VolDec>=Square1VolumeCutoff):
+						#print "Previously muted voice has risen above the volume threshhold at Pattern",n,"row",i,"Unmuting Note",Square1Note
+						Square1Pattern[n].append(108)
+						Square1VolMuted=0
+
 					else:
-						Square1Pattern[n].append(108)						
+						Square1Pattern[n].append(108)
+						
 				else:
 					Square1Pattern[n].append(108)
+
 				Square1LastFrame=i
 				
-			if Square1CurString!=BlankLine:  #If line isn't blank
-				Square1Note=Square1CurString.replace(".","")  #find note string
-				if Square1Note!=StopNote1 and Square1Note!=StopNote2:  #compare and see if it's a stop note or a regular note
+			if Square1CurString!=BlankLine:
+				Square1Note=Square1CurString.replace(".","")
+				
+				if Square1Note!=StopNote1 and Square1Note!=StopNote2:
 					Square1Note=Square1Note.replace("-","")
-					if i>0:				#append duration value only if this isn't the first note in the list
-						Square1NoteDuration=i-Square1LastFrame   #calculate duration of the previous note
-						Square1Pattern[n].append(Square1NoteDuration-1)   #add the duration into the pattern list
-					Square1Pattern[n].append(Square1Note)			#add new note into the pattern list
-					Square1LastFrame=i			#reset duration counter
+					
+					if Square1VolMuted==1 and Square1Vol!=".":
+						Square1VolDec=int(Square1Vol,16)
+						if Square1VolDec>=Square1VolumeCutoff and i==0:
+							Square1Pattern[n].append(Square1Note)
+							Square1VolMuted=0
+							Square1LastFrame=i
+							
+						if Square1VolDec>=Square1VolumeCutoff and i>0:
+							Square1NoteDuration=i-Square1LastFrame
+							Square1Pattern[n].append(Square1NoteDuration-1)
+							Square1Pattern[n].append(Square1Note)
+							Square1VolMuted=0
+							Square1LastFrame=i
+							
+						if Square1VolDec<Square1VolumeCutoff and i==0:
+							#if i>0:				#append duration value only if this isn't the first note in the list
+							#	Square1NoteDuration=i-Square1LastFrame
+							#	Square1Pattern[n].append(Square1NoteDuration-1)							
+							Square1Pattern[n].append(mute_note)
+							Square1LastFrame=i
+					
+					elif Square1VolMuted==0 and Square1Vol!=".":
+						Square1VolDec=int(Square1Vol,16)	
+						if Square1VolDec<Square1VolumeCutoff and i==0:
+							Square1Pattern[n].append(mute_note)
+							Square1VolMuted=1
+							Square1LastFrame=i
+						elif Square1VolDec<Square1VolumeCutoff and i>0:
+							Square1NoteDuration=i-Square1LastFrame
+							Square1Pattern[n].append(Square1NoteDuration-1)
+							Square1Pattern[n].append(mute_note)
+							Square1VolMuted=1
+							Square1LastFrame=i
+						if Square1VolDec>=Square1VolumeCutoff:
+							if i>0:				#append duration value only if this isn't the first note in the list
+								Square1NoteDuration=i-Square1LastFrame
+								Square1Pattern[n].append(Square1NoteDuration-1)							
+							Square1Pattern[n].append(Square1Note)
+							Square1LastFrame=i						
+							
+					if Square1VolMuted==0 and Square1Vol==".":
+						if i>0:				#append duration value only if this isn't the first note in the list
+							Square1NoteDuration=i-Square1LastFrame
+							Square1Pattern[n].append(Square1NoteDuration-1)							
+						Square1Pattern[n].append(Square1Note)
+						Square1LastFrame=i
+						
+					if Square1VolMuted==1 and Square1Vol=="." and i==0:
+						if i>0:				#append duration value only if this isn't the first note in the list
+							Square1NoteDuration=i-Square1LastFrame
+							Square1Pattern[n].append(Square1NoteDuration-1)							
+						Square1Pattern[n].append(mute_note)
+						Square1LastFrame=i
 						
 					Square1LastNote=Square1Note
-					Square1VolMuted=0
-
 					
-				if Square1Note==StopNote1 or Square1Note==StopNote2:
+					
+				if ((Square1Note==StopNote1) or (Square1Note==StopNote2)) and Square1VolMuted==0:
 					if i>0:
 						Square1NoteDuration=i-Square1LastFrame
 						Square1Pattern[n].append(Square1NoteDuration-1)
 					Square1Pattern[n].append(mute_note)
-					Square1LastFrame=i
 					Square1LastNote=mute_note
-					Square1VolMuted=0
+					Square1LastFrame=i
 					
-###### Mute/Unmute notes based on volume cutoff ##########					
+				if ((Square1Note==StopNote1) or (Square1Note==StopNote2)) and Square1VolMuted==1 and i==0:
+					Square1Pattern[n].append(108)
+					Square1LastFrame=i
+					
+				Square1LastNote=Square1Note	
+					
+			###### Mute/Unmute notes based on volume cutoff ##########					
 			if (Square1CurString==BlankLine) and (Square1Vol!=BlankVol):
 				Square1VolDec=int(Square1Vol,16)
-				if Square1VolDec<VolumeCutoff and Square1VolMuted==0:
-					Square1LastMutedNote=Square1LastNote
+				if Square1VolDec<Square1VolumeCutoff and Square1VolMuted==0:
 					
 					if i>0:
 						Square1NoteDuration=i-Square1LastFrame
 						Square1Pattern[n].append(Square1NoteDuration-1)
 					Square1Pattern[n].append(mute_note)
-					Square1LastFrame=i
-					Square1LastNote=mute_note
-					
-#					print "Found volume cutoff (",Square1VolDec,") at Pattern",n,", row",i,".  Muting note",Square1LastMutedNote,"duration:",Square1NoteDuration
+					Square1LastFrame=i	
+					#print "Found volume cutoff (",Square1VolDec,") at Pattern",n,", row",i,".  Muting note",Square1LastNote,"duration:",Square1NoteDuration
 					Square1VolMuted=1
 									
-				if Square1VolDec>=VolumeCutoff and Square1VolMuted:
+				if Square1VolDec>=Square1VolumeCutoff and Square1VolMuted:
 				
 					if i>0:				#append duration value only if this isn't the first note in the list
 						Square1NoteDuration=i-Square1LastFrame
 						Square1Pattern[n].append(Square1NoteDuration-1)
-					Square1Pattern[n].append(Square1LastMutedNote)
+					Square1Pattern[n].append(Square1LastNote)
 					Square1LastFrame=i
 					
-					Square1LastNote=Square1LastMutedNote
-#					print "Volume Muted note has risen above cutoff (",Square1VolDec,") level at Pattern",n,", row",i,".  Unmuting note",Square1LastMutedNote,"duration:",Square1NoteDuration
-					Square1VolMuted=0
-											
+					#print "Volume Muted note has risen above cutoff (",Square1VolDec,")(current volume:",Square1VolDec,") level at Pattern",n,", row",i,".  Unmuting note",Square1LastNote,"duration:",Square1NoteDuration
+					Square1VolMuted=0											
 					
 	
 	###### Calculate Square2 Data ######
 		if Square2EndedOnD00==0:	
 			if i==0 and Square2CurString==BlankLine:  #Set as "Stop Note" if no data on the first line
+			
 				if Square2Vol!=BlankVol:
 					Square2VolDec=int(Square2Vol,16)
-					if (Square2VolMuted==0 and Square2VolDec<VolumeCutoff) or (Square2VolMuted==1 and Square2VolDec>=VolumeCutoff):
-						print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
+					if (Square2VolMuted==0 and Square2VolDec<Square2VolumeCutoff):
+						#print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
+						Square2Pattern[n].append(108)
+						Square2VolMuted=1
+					elif (Square2VolMuted==1 and Square2VolDec>=Square2VolumeCutoff):
+						#print "Previously muted voice has risen above the volume threshhold at Pattern",n,"row",i,"Unmuting Note",Square2Note
+						Square2Pattern[n].append(108)
+						Square2VolMuted=0
+
 					else:
-						#Square2Pattern[n].append(Square2LastNote)
-						Square2Pattern[n].append(108)						
-						#print "No beginning note detected (with volume parameter), appending code 108"
+						Square2Pattern[n].append(108)
+						
 				else:
-					#Square2Pattern[n].append(Square2LastNote)
 					Square2Pattern[n].append(108)
-					#print "No beginning note detected (with no volume), appending code 108"
+
 				Square2LastFrame=i
 				
 			if Square2CurString!=BlankLine:
 				Square2Note=Square2CurString.replace(".","")
+				
 				if Square2Note!=StopNote1 and Square2Note!=StopNote2:
 					Square2Note=Square2Note.replace("-","")
-					if i>0:				#append duration value only if this isn't the first note in the list
+					
+					if Square2VolMuted==1 and Square2Vol!=".":
+						Square2VolDec=int(Square2Vol,16)
+						if Square2VolDec>=Square2VolumeCutoff and i==0:
+							Square2Pattern[n].append(Square2Note)
+							Square2VolMuted=0
+							Square2LastFrame=i
+							
+						if Square2VolDec>=Square2VolumeCutoff and i>0:
+							Square2NoteDuration=i-Square2LastFrame
+							Square2Pattern[n].append(Square2NoteDuration-1)
+							Square2Pattern[n].append(Square2Note)
+							Square2VolMuted=0
+							Square2LastFrame=i
+							
+						if Square2VolDec<Square2VolumeCutoff and i==0:
+							#if i>0:				#append duration value only if this isn't the first note in the list
+							#	Square2NoteDuration=i-Square2LastFrame
+							#	Square2Pattern[n].append(Square2NoteDuration-1)							
+							Square2Pattern[n].append(mute_note)
+							Square2LastFrame=i
+					
+					elif Square2VolMuted==0 and Square2Vol!=".":
+						Square2VolDec=int(Square2Vol,16)	
+						if Square2VolDec<Square2VolumeCutoff and i==0:
+							Square2Pattern[n].append(mute_note)
+							Square2VolMuted=1
+							Square2LastFrame=i
+						elif Square2VolDec<Square2VolumeCutoff and i>0:
+							Square2NoteDuration=i-Square2LastFrame
+							Square2Pattern[n].append(Square2NoteDuration-1)
+							Square2Pattern[n].append(mute_note)
+							Square2VolMuted=1
+							Square2LastFrame=i
+						if Square2VolDec>=Square2VolumeCutoff:
+							if i>0:				#append duration value only if this isn't the first note in the list
+								Square2NoteDuration=i-Square2LastFrame
+								Square2Pattern[n].append(Square2NoteDuration-1)							
+							Square2Pattern[n].append(Square2Note)
+							Square2LastFrame=i						
+							
+					if Square2VolMuted==0 and Square2Vol==".":
+						if i>0:				#append duration value only if this isn't the first note in the list
+							Square2NoteDuration=i-Square2LastFrame
+							Square2Pattern[n].append(Square2NoteDuration-1)							
+						Square2Pattern[n].append(Square2Note)
+						Square2LastFrame=i
+						
+					if Square2VolMuted==1 and Square2Vol=="." and i==0:
+						if i>0:				#append duration value only if this isn't the first note in the list
+							Square2NoteDuration=i-Square2LastFrame
+							Square2Pattern[n].append(Square2NoteDuration-1)							
+						Square2Pattern[n].append(mute_note)
+						Square2LastFrame=i
+						
+					Square2LastNote=Square2Note
+					
+					
+				if ((Square2Note==StopNote1) or (Square2Note==StopNote2)) and Square2VolMuted==0:
+					if i>0:
 						Square2NoteDuration=i-Square2LastFrame
 						Square2Pattern[n].append(Square2NoteDuration-1)
-					Square2Pattern[n].append(Square2Note)
+					Square2Pattern[n].append(mute_note)
+					Square2LastNote=mute_note
 					Square2LastFrame=i
 					
-					Square2LastNote=Square2Note
-					Square2VolMuted=0
-
+				Square2LastNote=Square2Note	
+				
+				if ((Square2Note==StopNote1) or (Square2Note==StopNote2)) and Square2VolMuted==1 and i==0:
+					Square2Pattern[n].append(108)
+					Square2LastFrame=i
 					
-				if Square2Note==StopNote1 or Square2Note==StopNote2:
+			###### Mute/Unmute notes based on volume cutoff ##########					
+			if (Square2CurString==BlankLine) and (Square2Vol!=BlankVol):
+				Square2VolDec=int(Square2Vol,16)
+				if Square2VolDec<Square2VolumeCutoff and Square2VolMuted==0:
+					
 					if i>0:
 						Square2NoteDuration=i-Square2LastFrame
 						Square2Pattern[n].append(Square2NoteDuration-1)
 					Square2Pattern[n].append(mute_note)
 					Square2LastFrame=i	
-					Square2LastNote=mute_note
-					Square2VolMuted=0
-					
-					
-					###### Mute/Unmute notes based on volume cutoff ##########					
-			if (Square2CurString==BlankLine) and (Square2Vol!=BlankVol):
-				Square2VolDec=int(Square2Vol,16)
-				if Square2VolDec<VolumeCutoff and Square2VolMuted==0:
-					Square2LastMutedNote=Square2LastNote
-					
-					if i>0:
-						Square2NoteDuration=i-Square2LastFrame
-						Square2Pattern[n].append(Square2NoteDuration-1)
-					Square2Pattern[n].append(mute_note)
-					Square2LastFrame=i
-					Square2LastNote=mute_note
-					
-					Square2VolMuted=0	
-#					print "Found volume cutoff (",Square2VolDec,") at Pattern",n,", row",i,".  Muting note",Square2LastMutedNote,"duration:",Square2NoteDuration
+					#print "Found volume cutoff (",Square2VolDec,") at Pattern",n,", row",i,".  Muting note",Square2LastNote,"duration:",Square2NoteDuration
 					Square2VolMuted=1
 									
-				if Square2VolDec>=VolumeCutoff and Square2VolMuted:
+				if Square2VolDec>=Square2VolumeCutoff and Square2VolMuted:
 				
 					if i>0:				#append duration value only if this isn't the first note in the list
 						Square2NoteDuration=i-Square2LastFrame
 						Square2Pattern[n].append(Square2NoteDuration-1)
-					Square2Pattern[n].append(Square2LastMutedNote)
+					Square2Pattern[n].append(Square2LastNote)
 					Square2LastFrame=i
 					
-					Square2LastNote=Square2LastMutedNote
-#					print "Volume Muted note has risen above cutoff (",Square2VolDec,") level at Pattern",n,", row",i,".  Unmuting note",Square2LastMutedNote,"duration:",Square2NoteDuration
-					Square2VolMuted=0
-
+					#print "Volume Muted note has risen above cutoff (",Square2VolDec,")(current volume:",Square2VolDec,") level at Pattern",n,", row",i,".  Unmuting note",Square2LastNote,"duration:",Square2NoteDuration
+					Square2VolMuted=0											
+															
+	
 
 	###### Calculate Triangle Data ######
 		if TriangleEndedOnD00==0:	
 			if i==0 and TriangleCurString==BlankLine:  #Set as "Stop Note" if no data on the first line
+			
 				if TriangleVol!=BlankVol:
 					TriangleVolDec=int(TriangleVol,16)
-					if (TriangleVolMuted==0 and TriangleVolDec<VolumeCutoff) or (TriangleVolMuted==1 and TriangleVolDec>=VolumeCutoff):
-						print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
+					if (TriangleVolMuted==0 and TriangleVolDec<TriangleVolumeCutoff):
+						#print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
+						TrianglePattern[n].append(108)
+						TriangleVolMuted=1
+					elif (TriangleVolMuted==1 and TriangleVolDec>=TriangleVolumeCutoff):
+						#print "Previously muted voice has risen above the volume threshhold at Pattern",n,"row",i,"Unmuting Note",TriangleNote
+						TrianglePattern[n].append(108)
+						TriangleVolMuted=0
+
 					else:
-						#TrianglePattern[n].append(TriangleLastNote)
-						TrianglePattern[n].append(108)						
-						#print "No beginning note detected (with volume parameter), appending code 108"
+						TrianglePattern[n].append(108)
+						
 				else:
-					#TrianglePattern[n].append(TriangleLastNote)
 					TrianglePattern[n].append(108)
-					#print "No beginning note detected (with no volume), appending code 108"
+
 				TriangleLastFrame=i
 				
 			if TriangleCurString!=BlankLine:
 				TriangleNote=TriangleCurString.replace(".","")
+				
 				if TriangleNote!=StopNote1 and TriangleNote!=StopNote2:
 					TriangleNote=TriangleNote.replace("-","")
-					if i>0:				#append duration value only if this isn't the first note in the list
-						TriangleNoteDuration=i-TriangleLastFrame
-						TrianglePattern[n].append(TriangleNoteDuration-1)
-					TrianglePattern[n].append(TriangleNote)
-					TriangleLastFrame=i
 					
+					if TriangleVolMuted==1 and TriangleVol!=".":
+						TriangleVolDec=int(TriangleVol,16)
+						if TriangleVolDec>=TriangleVolumeCutoff and i==0:
+							TrianglePattern[n].append(TriangleNote)
+							TriangleVolMuted=0
+							TriangleLastFrame=i
+							
+						if TriangleVolDec>=TriangleVolumeCutoff and i>0:
+							TriangleNoteDuration=i-TriangleLastFrame
+							TrianglePattern[n].append(TriangleNoteDuration-1)
+							TrianglePattern[n].append(TriangleNote)
+							TriangleVolMuted=0
+							TriangleLastFrame=i
+							
+						if TriangleVolDec<TriangleVolumeCutoff and i==0:
+							#if i>0:				#append duration value only if this isn't the first note in the list
+							#	TriangleNoteDuration=i-TriangleLastFrame
+							#	TrianglePattern[n].append(TriangleNoteDuration-1)							
+							TrianglePattern[n].append(mute_note)
+							TriangleLastFrame=i
+					
+					elif TriangleVolMuted==0 and TriangleVol!=".":
+						TriangleVolDec=int(TriangleVol,16)	
+						if TriangleVolDec<TriangleVolumeCutoff and i==0:
+							TrianglePattern[n].append(mute_note)
+							TriangleVolMuted=1
+							TriangleLastFrame=i
+						elif TriangleVolDec<TriangleVolumeCutoff and i>0:
+							TriangleNoteDuration=i-TriangleLastFrame
+							TrianglePattern[n].append(TriangleNoteDuration-1)
+							TrianglePattern[n].append(mute_note)
+							TriangleVolMuted=1
+							TriangleLastFrame=i
+						if TriangleVolDec>=TriangleVolumeCutoff:
+							if i>0:				#append duration value only if this isn't the first note in the list
+								TriangleNoteDuration=i-TriangleLastFrame
+								TrianglePattern[n].append(TriangleNoteDuration-1)							
+							TrianglePattern[n].append(TriangleNote)
+							TriangleLastFrame=i						
+							
+					if TriangleVolMuted==0 and TriangleVol==".":
+						if i>0:				#append duration value only if this isn't the first note in the list
+							TriangleNoteDuration=i-TriangleLastFrame
+							TrianglePattern[n].append(TriangleNoteDuration-1)							
+						TrianglePattern[n].append(TriangleNote)
+						TriangleLastFrame=i
+						
+					if TriangleVolMuted==1 and TriangleVol=="." and i==0:
+						if i>0:				#append duration value only if this isn't the first note in the list
+							TriangleNoteDuration=i-TriangleLastFrame
+							TrianglePattern[n].append(TriangleNoteDuration-1)							
+						TrianglePattern[n].append(mute_note)
+						TriangleLastFrame=i
+						
 					TriangleLastNote=TriangleNote
-					TriangleVolMuted=0
 					
-				if (TriangleNote==StopNote1) or (TriangleNote==StopNote2):
+					
+				if ((TriangleNote==StopNote1) or (TriangleNote==StopNote2)) and TriangleVolMuted==0:
 					if i>0:
 						TriangleNoteDuration=i-TriangleLastFrame
 						TrianglePattern[n].append(TriangleNoteDuration-1)
 					TrianglePattern[n].append(mute_note)
-					TriangleLastNote=mute_note					
+					TriangleLastNote=mute_note
 					TriangleLastFrame=i
-					TriangleVolMuted=0
 					
+				if ((TriangleNote==StopNote1) or (TriangleNote==StopNote2)) and TriangleVolMuted==1 and i==0:
+					TrianglePattern[n].append(108)
+					TriangleLastFrame=i
+					
+				TriangleLastNote=TriangleNote
+			
+				
 					
 			###### Mute/Unmute notes based on volume cutoff ##########					
 			if (TriangleCurString==BlankLine) and (TriangleVol!=BlankVol):
 				TriangleVolDec=int(TriangleVol,16)
-				if TriangleVolDec<VolumeCutoff and TriangleVolMuted==0:
-					print "Triangle Volume passed below threshhold"
-					TriangleLastMutedNote=TriangleLastNote
+				if TriangleVolDec<TriangleVolumeCutoff and TriangleVolMuted==0:
 					
 					if i>0:
 						TriangleNoteDuration=i-TriangleLastFrame
 						TrianglePattern[n].append(TriangleNoteDuration-1)
 					TrianglePattern[n].append(mute_note)
 					TriangleLastFrame=i
-					TriangleLastNote=mute_note
-					print "Found volume cutoff (",TriangleVolDec,") at Pattern",n,", row",i,".  Muting note",TriangleLastMutedNote,"duration:",TriangleNoteDuration
+					#print "Found volume cutoff (",TriangleVolDec,") at Pattern",n,", row",i,".  Muting note",TriangleLastNote,"duration:",TriangleNoteDuration
 					TriangleVolMuted=1
 									
-				if TriangleVolDec>=VolumeCutoff and TriangleVolMuted:
-					print "Triangle Volume passed above threshhold"
+				if TriangleVolDec>=TriangleVolumeCutoff and TriangleVolMuted:
+				
 					if i>0:				#append duration value only if this isn't the first note in the list
 						TriangleNoteDuration=i-TriangleLastFrame
 						TrianglePattern[n].append(TriangleNoteDuration-1)
-					TrianglePattern[n].append(TriangleLastMutedNote)
+					TrianglePattern[n].append(TriangleLastNote)
 					TriangleLastFrame=i
 					
-					TriangleLastNote=TriangleLastMutedNote
-					print "Volume Muted note has risen above cutoff (",TriangleVolDec,") level at Pattern",n,", row",i,".  Unmuting note",TriangleLastMutedNote,"duration:",TriangleNoteDuration
-					TriangleVolMuted=0
+					#print "Volume Muted note has risen above cutoff (",TriangleVolDec,")(current volume:",TriangleVolDec,") level at Pattern",n,", row",i,".  Unmuting note",TriangleLastNote,"duration:",TriangleNoteDuration
+					TriangleVolMuted=0											
+													
+	
 				
 	###### Calculate Noise Data ######
 		if NoiseEndedOnD00==0:	
 			if i==0 and NoiseCurString==BlankLine:  #Set as "Stop Note" if no data on the first line
+			
 				if NoiseVol!=BlankVol:
 					NoiseVolDec=int(NoiseVol,16)
-					if (NoiseVolMuted==0 and NoiseVolDec<NoiseVolumeCutoff) or (NoiseVolMuted==1 and NoiseVolDec>=NoiseVolumeCutoff):
-						print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
+					if (NoiseVolMuted==0 and NoiseVolDec<NoiseVolumeCutoff):
+						#print "Ignoring beginning of pattern blank note, due to previous mute/unmute condition"
+						NoisePattern[n].append(108)
+						NoiseVolMuted=1
+					elif (NoiseVolMuted==1 and NoiseVolDec>=NoiseVolumeCutoff):
+						#print "Previously muted voice has risen above the volume threshhold at Pattern",n,"row",i,"Unmuting Note",NoiseNote
+						NoisePattern[n].append(108)
+						NoiseVolMuted=0
+
 					else:
-						NoisePattern[n].append(mute_note)
+						NoisePattern[n].append(108)
+						
 				else:
-					NoisePattern[n].append(mute_note)
+					NoisePattern[n].append(108)
+
 				NoiseLastFrame=i
 				
 			if NoiseCurString!=BlankLine:
 				NoiseNote=NoiseCurString.replace(".","")
+				
 				if NoiseNote!=StopNote1 and NoiseNote!=StopNote2:
 					NoiseNote=NoiseNote.replace("-","")
-					if i>0:				#append duration value only if this isn't the first note in the list
-						NoiseNoteDuration=i-NoiseLastFrame
-						NoisePattern[n].append(NoiseNoteDuration-1)
+					
+					if NoiseVolMuted==1 and NoiseVol!=".":
+						NoiseVolDec=int(NoiseVol,16)
+						if NoiseVolDec>=NoiseVolumeCutoff and i==0:
+							NoisePattern[n].append(NoiseNote)
+							NoiseVolMuted=0
+							NoiseLastFrame=i
+							
+						if NoiseVolDec>=NoiseVolumeCutoff and i>0:
+							NoiseNoteDuration=i-NoiseLastFrame
+							NoisePattern[n].append(NoiseNoteDuration-1)
+							NoisePattern[n].append(NoiseNote)
+							NoiseVolMuted=0
+							NoiseLastFrame=i
+							
+						if NoiseVolDec<NoiseVolumeCutoff and i==0:
+							#if i>0:				#append duration value only if this isn't the first note in the list
+							#	NoiseNoteDuration=i-NoiseLastFrame
+							#	NoisePattern[n].append(NoiseNoteDuration-1)							
+							NoisePattern[n].append(mute_note)
+							NoiseLastFrame=i
+					
+					elif NoiseVolMuted==0 and NoiseVol!=".":
+						NoiseVolDec=int(NoiseVol,16)	
+						if NoiseVolDec<NoiseVolumeCutoff and i==0:
+							NoisePattern[n].append(mute_note)
+							NoiseVolMuted=1
+							NoiseLastFrame=i
+						elif NoiseVolDec<NoiseVolumeCutoff and i>0:
+							NoiseNoteDuration=i-NoiseLastFrame
+							NoisePattern[n].append(NoiseNoteDuration-1)
+							NoisePattern[n].append(mute_note)
+							NoiseVolMuted=1
+							NoiseLastFrame=i
+						if NoiseVolDec>=NoiseVolumeCutoff:
+							if i>0:				#append duration value only if this isn't the first note in the list
+								NoiseNoteDuration=i-NoiseLastFrame
+								NoisePattern[n].append(NoiseNoteDuration-1)							
+							NoisePattern[n].append(NoiseNote)
+							NoiseLastFrame=i						
+							
+					if NoiseVolMuted==0 and NoiseVol==".":
+						if i>0:				#append duration value only if this isn't the first note in the list
+							NoiseNoteDuration=i-NoiseLastFrame
+							NoisePattern[n].append(NoiseNoteDuration-1)							
+						NoisePattern[n].append(NoiseNote)
+						NoiseLastFrame=i
 						
-					NoisePattern[n].append(NoiseNote)
-					NoiseLastFrame=i
-					
+					if NoiseVolMuted==1 and NoiseVol=="." and i==0:
+						if i>0:				#append duration value only if this isn't the first note in the list
+							NoiseNoteDuration=i-NoiseLastFrame
+							NoisePattern[n].append(NoiseNoteDuration-1)							
+						NoisePattern[n].append(mute_note)
+						NoiseLastFrame=i
+						
 					NoiseLastNote=NoiseNote
-					#NoiseVolMuted=0
 					
-				if (NoiseNote==StopNote1) or (NoiseNote==StopNote2):
+					
+				if ((NoiseNote==StopNote1) or (NoiseNote==StopNote2)) and NoiseVolMuted==0:
 					if i>0:
 						NoiseNoteDuration=i-NoiseLastFrame
 						NoisePattern[n].append(NoiseNoteDuration-1)
 					NoisePattern[n].append(mute_note)
 					NoiseLastNote=mute_note
 					NoiseLastFrame=i
-					#NoiseVolMuted=0
 					
+				NoiseLastNote=NoiseNote	
 					
 			###### Mute/Unmute notes based on volume cutoff ##########					
 			if (NoiseCurString==BlankLine) and (NoiseVol!=BlankVol):
 				NoiseVolDec=int(NoiseVol,16)
 				if NoiseVolDec<NoiseVolumeCutoff and NoiseVolMuted==0:
-					NoiseLastMutedNote=NoiseLastNote
 					
 					if i>0:
 						NoiseNoteDuration=i-NoiseLastFrame
@@ -682,7 +918,7 @@ for n in range(TotalPatterns):
 					NoisePattern[n].append(mute_note)
 					NoiseLastFrame=i
 					NoiseLastNote=mute_note	
-#					print "Found volume cutoff (",NoiseVolDec,") at Pattern",n,", row",i,".  Muting note",NoiseLastMutedNote,"duration:",NoiseNoteDuration
+					#print "Found volume cutoff (",NoiseVolDec,") at Pattern",n,", row",i,".  Muting note",NoiseLastNote,"duration:",NoiseNoteDuration
 					NoiseVolMuted=1
 									
 				if NoiseVolDec>=NoiseVolumeCutoff and NoiseVolMuted:
@@ -690,12 +926,13 @@ for n in range(TotalPatterns):
 					if i>0:				#append duration value only if this isn't the first note in the list
 						NoiseNoteDuration=i-NoiseLastFrame
 						NoisePattern[n].append(NoiseNoteDuration-1)
-					NoisePattern[n].append(NoiseLastMutedNote)
+					NoisePattern[n].append(NoiseLastNote)
 					NoiseLastFrame=i
 					
-					NoiseLastNote=NoiseLastMutedNote
-#					print "Volume Muted note has risen above cutoff (",NoiseVolDec,")(current volume:",NoiseVolDec,") level at Pattern",n,", row",i,".  Unmuting note",NoiseLastMutedNote,"duration:",NoiseNoteDuration
-					NoiseVolMuted=0
+					#print "Volume Muted note has risen above cutoff (",NoiseVolDec,")(current volume:",NoiseVolDec,") level at Pattern",n,", row",i,".  Unmuting note",NoiseLastNote,"duration:",NoiseNoteDuration
+					NoiseVolMuted=0											
+					
+					
 		
 		if Square1Cmd=="D00":
 			print "D00 detected in line",(n*PatternSize+DataStartRow+i+2),", terminating Square 1 pattern"
@@ -817,7 +1054,8 @@ for n in range(TotalOrders):
 	if CurrentOrder not in s3usedpatterns:  #Check to see if the pattern has already been compiled
 		
 #		print "Current Order is:", CurrentOrder," and it has not yet been compiled.  Compiling..."
-	
+#		print "Current Patern is:", CurrentPattern
+		
 		s3addr=hex(DataStartAddrDec)
 		s3addrhighlist.append("$"+s3addr[2:4])
 		s3addrlowlist.append("$"+s3addr[4:6])
@@ -996,7 +1234,8 @@ for n in range(TotalOrders):
 		DataStartAddrDec=DataStartAddrDec+1
 		
 	s2Orders.append(CurrentOrder)
-
+	
+S2addrhighlist.append(80) # append exit code, so the player knows when to stop playing
 		
 S1usedpatterns=[]
 S1addrhighlist=[]
@@ -1006,6 +1245,8 @@ S1usedaddresseslow=[]
 program_data_out.append("; S1 Note Data   ")	
 	
 for n in range(TotalOrders):
+
+
 
 	CurrentOrder=int(TriangleOrder[n], 16)
 	CurrentPattern=TrianglePattern[CurrentOrder]
@@ -1023,7 +1264,8 @@ for n in range(TotalOrders):
 	
 	if CurrentOrder not in S1usedpatterns:  #Check to see if the pattern has already been compiled
 		
-		#print "Current Order is:", CurrentOrder," and it has not yet been compiled.  Compiling..."
+#		print "Current Order is:", CurrentOrder," and it has not yet been compiled.  Compiling..."
+#		print "Current Patern is:", CurrentPattern
 	
 		S1addr=hex(DataStartAddrDec)
 		S1addrhighlist.append("$"+S1addr[2:4])
@@ -1101,6 +1343,9 @@ N4usedaddresseshigh=[]
 N4usedaddresseslow=[]
 
 program_data_out.append("; N4 Note Data   ")	
+
+#print "All noise pattern info:",NoisePattern
+
 	
 for n in range(TotalOrders):
 
@@ -1108,6 +1353,9 @@ for n in range(TotalOrders):
 	CurrentPattern=NoisePattern[CurrentOrder]
 	CurrentPatternLen=len(CurrentPattern)
 	#print "Current Pattern (",CurrentOrder,")is:", CurrentPattern
+	
+	#print "Current Order is:", CurrentOrder," and it has not yet been compiled.  Compiling..."
+	#print "Current Patern is:", CurrentPattern
 	
 	
 	if CurrentOrder in N4usedpatterns:
@@ -1125,6 +1373,8 @@ for n in range(TotalOrders):
 		
 		#print "Current Order is:", CurrentOrder," and it has not yet been compiled.  Compiling..."
 		
+		#print "Current Pattern is:", CurrentPattern
+		
 		N4addr=hex(DataStartAddrDec)
 		N4addrhighlist.append("$"+N4addr[2:4])
 		N4addrlowlist.append("$"+N4addr[4:6])
@@ -1136,7 +1386,9 @@ for n in range(TotalOrders):
 			CurrentNoteEng=CurrentPattern[i*2]
 			CurrentDuration=CurrentPattern[i*2+1]
 			
-			if ((CurrentNoteEng != mute_note)):  #Normal note positions
+			#print "CurrentNoteEng is", CurrentNoteEng
+			
+			if ((CurrentNoteEng != mute_note) and CurrentNoteEng!=108):  #Normal note positions
 				if c64mode==0:
 					CurrentNotePos=PercList.index(CurrentNoteEng)
 					Tone=CurrentNotePos*8+128
@@ -1159,6 +1411,10 @@ for n in range(TotalOrders):
 				Tone=97
 				buildstr=bytestr + str(Tone) + "," + str(CurrentDuration) + "; N4 mute and duration"
 				program_data_out.append(buildstr)
+				
+			if CurrentNoteEng==108:		#Transparent note
+				buildstr=bytestr + str(108) + "," + str(CurrentDuration) + "; N4 transparent note and duration"
+				program_data_out.append(buildstr)
 					
 			DataStartAddrDec=DataStartAddrDec+2
 		
@@ -1177,35 +1433,56 @@ VicPlayerHeaderString=";print S1=, S2=, S3=, N4=, P=, L=\nsstring byte 147,13,13
 VicPlayerHeaderString=VicPlayerHeaderString.replace("AUTHORXX",AuthorString)
 VicPlayerHeaderString=VicPlayerHeaderString.replace("TITLEXX",TitleString)
 
-address_header_out.append("SwapS2S3        byte " + str(SwapS2S3))
-
 if LoopPoint==0: #Starting point of 255 starts the song back at 0 in the VICplayer
 	LoopPoint=256
 	
 
 address_header_out.append("LoopPoint        byte " + str(LoopPoint-1))
 
-s3addrhighliststr=str(s3addrhighlist)
-s3addrhighliststr=s3addrhighliststr.replace("[","")
-s3addrhighliststr=s3addrhighliststr.replace("]","")
-s3addrhighliststr=s3addrhighliststr.replace("'","")
-s3addrhighliststr="S3addrhighlist	" + bytestr + s3addrhighliststr
-s3addrlowliststr=str(s3addrlowlist)
-s3addrlowliststr=s3addrlowliststr.replace("[","")
-s3addrlowliststr=s3addrlowliststr.replace("]","")
-s3addrlowliststr=s3addrlowliststr.replace("'","")
-s3addrlowliststr="S3addrlowlist	" + bytestr + s3addrlowliststr
-S2addrhighliststr=str(S2addrhighlist)
-S2addrhighliststr=S2addrhighliststr.replace("[","")
-S2addrhighliststr=S2addrhighliststr.replace("]","")
-S2addrhighliststr=S2addrhighliststr.replace("'","")
-S2addrhighliststr="S2addrhighlist	" + bytestr + S2addrhighliststr
-S2addrlowliststr=str(S2addrlowlist)
-S2addrlowliststr=S2addrlowliststr.replace("[","")
-S2addrlowliststr=S2addrlowliststr.replace("]","")
-S2addrlowliststr=S2addrlowliststr.replace("'","")
-S2addrlowliststr="S2addrlowlist	" + bytestr + S2addrlowliststr
 
+if SwapS2S3==0:
+	s3addrhighliststr=str(s3addrhighlist)
+	s3addrhighliststr=s3addrhighliststr.replace("[","")
+	s3addrhighliststr=s3addrhighliststr.replace("]","")
+	s3addrhighliststr=s3addrhighliststr.replace("'","")
+	s3addrhighliststr="S3addrhighlist	" + bytestr + s3addrhighliststr
+	s3addrlowliststr=str(s3addrlowlist)
+	s3addrlowliststr=s3addrlowliststr.replace("[","")
+	s3addrlowliststr=s3addrlowliststr.replace("]","")
+	s3addrlowliststr=s3addrlowliststr.replace("'","")
+	s3addrlowliststr="S3addrlowlist	" + bytestr + s3addrlowliststr
+	S2addrhighliststr=str(S2addrhighlist)
+	S2addrhighliststr=S2addrhighliststr.replace("[","")
+	S2addrhighliststr=S2addrhighliststr.replace("]","")
+	S2addrhighliststr=S2addrhighliststr.replace("'","")
+	S2addrhighliststr="S2addrhighlist	" + bytestr + S2addrhighliststr
+	S2addrlowliststr=str(S2addrlowlist)
+	S2addrlowliststr=S2addrlowliststr.replace("[","")
+	S2addrlowliststr=S2addrlowliststr.replace("]","")
+	S2addrlowliststr=S2addrlowliststr.replace("'","")
+	S2addrlowliststr="S2addrlowlist	" + bytestr + S2addrlowliststr
+	
+if SwapS2S3==1:	
+	s3addrhighliststr=str(s3addrhighlist)
+	s3addrhighliststr=s3addrhighliststr.replace("[","")
+	s3addrhighliststr=s3addrhighliststr.replace("]","")
+	s3addrhighliststr=s3addrhighliststr.replace("'","")
+	s3addrhighliststr="S2addrhighlist	" + bytestr + s3addrhighliststr
+	s3addrlowliststr=str(s3addrlowlist)
+	s3addrlowliststr=s3addrlowliststr.replace("[","")
+	s3addrlowliststr=s3addrlowliststr.replace("]","")
+	s3addrlowliststr=s3addrlowliststr.replace("'","")
+	s3addrlowliststr="S2addrlowlist	" + bytestr + s3addrlowliststr
+	S2addrhighliststr=str(S2addrhighlist)
+	S2addrhighliststr=S2addrhighliststr.replace("[","")
+	S2addrhighliststr=S2addrhighliststr.replace("]","")
+	S2addrhighliststr=S2addrhighliststr.replace("'","")
+	S2addrhighliststr="S3addrhighlist	" + bytestr + S2addrhighliststr
+	S2addrlowliststr=str(S2addrlowlist)
+	S2addrlowliststr=S2addrlowliststr.replace("[","")
+	S2addrlowliststr=S2addrlowliststr.replace("]","")
+	S2addrlowliststr=S2addrlowliststr.replace("'","")
+	S2addrlowliststr="S3addrlowlist	" + bytestr + S2addrlowliststr
 
 
 S1addrhighliststr=str(S1addrhighlist)
@@ -1229,7 +1506,6 @@ N4addrlowliststr=N4addrlowliststr.replace("]","")
 N4addrlowliststr=N4addrlowliststr.replace("'","")
 N4addrlowliststr="N4addrlowlist	" + bytestr + N4addrlowliststr
 
-
 address_header_out.append(s3addrhighliststr)
 address_header_out.append(s3addrlowliststr)
 address_header_out.append(S2addrhighliststr)
@@ -1239,9 +1515,10 @@ address_header_out.append(S1addrlowliststr)
 address_header_out.append(N4addrhighliststr)
 address_header_out.append(N4addrlowliststr)
 
-address_header_out.append("*=$"+DataStartAddress)
-address_header_out.append("")
-address_header_out.append("sounddata")
+address_location_out = []
+address_location_out.append("*=$"+DataStartAddress)
+address_location_out.append("")
+address_location_out.append("sounddata")
 
 program_out=[]
 if args.full and c64mode==0:
@@ -1252,7 +1529,7 @@ if args.full and c64mode==1:
 		program_out = f.read().splitlines()
 	
 program_out=program_out + address_header_out
-program_out=program_out+program_data_out
+program_out=address_location_out + program_data_out + program_out
 program_out.append(VicPlayerHeaderString)
 
 print "S3 Order List:",s3Orders
