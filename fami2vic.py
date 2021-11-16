@@ -18,6 +18,12 @@ parser.add_argument("-T", "--triangle", dest="triangle",
 					help="Triangle Note position modifier (default=-12)", metavar="INTEGER")
 parser.add_argument("-V", "--volume", dest="volume",
 					help="Volume Mute Cutoff Level (default=-1)", metavar="INTEGER")
+parser.add_argument("-S1C", "--s1cutoff", dest="s1cutoff",
+					help="Square 1 Mute Cutoff Level (default=-1)", metavar="INTEGER")
+parser.add_argument("-S2C", "--s2cutoff", dest="s2cutoff",
+					help="Square 2 Mute Cutoff Level (default=-1)", metavar="INTEGER")
+parser.add_argument("-TC", "--tcutoff", dest="tcutoff",
+					help="Triangle Mute Cutoff Level (default=-1)", metavar="INTEGER")
 parser.add_argument("-NC", "--nvolume", dest="noisevolume",
 					help="Noise Channel Volume Mute Cutoff Level (default=4)", metavar="INTEGER")
 parser.add_argument("-D", "--data", dest="datastart",
@@ -138,12 +144,23 @@ else:
 		
 DataStartAddrDec=int(DataStartAddress,16)
 
-if args.volume==None:
+if args.volume==None:  #If a global volume cutoff is specified, load it in
 	print "No Voice Channel Volume Cutoff Specified, volume cutoff ignored"
 	print ""
 	VolumeCutoff=-1
 else:
 	VolumeCutoff=int(args.volume)
+	
+Square1VolumeCutoff=VolumeCutoff #load in global volume cutoff values	
+Square2VolumeCutoff=VolumeCutoff
+TriangleVolumeCutoff=VolumeCutoff
+
+if args.s1cutoff!=None:  #individual volume cutoffs take precedence 
+	Square1VolumeCutoff=int(args.s1cutoff)
+if args.s2cutoff!=None:
+	Square2VolumeCutoff=int(args.s2cutoff)
+if args.tcutoff!=None:
+	TriangleVolumeCutoff=int(args.tcutoff)
 	
 if args.noisevolume==None:
 	NoiseVolumeCutoff=0
@@ -170,10 +187,6 @@ BlankLine="..."
 StopNote1="---"
 StopNote2="==="
 BlankVol="."
-
-Square1VolumeCutoff=VolumeCutoff
-Square2VolumeCutoff=VolumeCutoff
-TriangleVolumeCutoff=VolumeCutoff
 
 #declare variables
 Square1VolMuted=0
@@ -530,6 +543,17 @@ for n in range(TotalPatterns):
 					Square1Pattern[n].append(108)
 					Square1LastFrame=i
 					
+				if ((Square1Note==StopNote1) or (Square1Note==StopNote2)) and Square1VolMuted==1 and i>0:
+					if Square1Vol!=BlankVol:
+						Square1VolDec=int(Square1Vol,16)
+						if Square1VolDec>=Square1VolumeCutoff:
+							Square1NoteDuration=i-Square1LastFrame
+							Square1Pattern[n].append(Square1NoteDuration-1)
+							Square1Pattern[n].append(mute_note)
+							Square1LastFrame=i
+							Square1LastNote=mute_note
+							Square1VolMuted=0
+					
 				Square1LastNote=Square1Note	
 					
 			###### Mute/Unmute notes based on volume cutoff ##########					
@@ -652,10 +676,23 @@ for n in range(TotalPatterns):
 					Square2LastFrame=i
 					
 				Square2LastNote=Square2Note	
+				if Square2LastNote=="---":
+					Square2LastNote=mute_note
 				
 				if ((Square2Note==StopNote1) or (Square2Note==StopNote2)) and Square2VolMuted==1 and i==0:
 					Square2Pattern[n].append(108)
 					Square2LastFrame=i
+					
+				if ((Square2Note==StopNote1) or (Square2Note==StopNote2)) and Square2VolMuted==1 and i>0:
+					if Square2Vol!=BlankVol:
+						Square2VolDec=int(Square2Vol,16)
+						if Square2VolDec>=Square2VolumeCutoff:
+							Square2NoteDuration=i-Square2LastFrame
+							Square2Pattern[n].append(Square2NoteDuration-1)
+							Square2Pattern[n].append(mute_note)
+							Square2LastFrame=i
+							Square2LastNote=mute_note
+							Square2VolMuted=0
 					
 			###### Mute/Unmute notes based on volume cutoff ##########					
 			if (Square2CurString==BlankLine) and (Square2Vol!=BlankVol):
@@ -781,6 +818,17 @@ for n in range(TotalPatterns):
 					TrianglePattern[n].append(108)
 					TriangleLastFrame=i
 					
+				if ((TriangleNote==StopNote1) or (TriangleNote==StopNote2)) and TriangleVolMuted==1 and i>0:
+					if TriangleVol!=BlankVol:
+						TriangleVolDec=int(TriangleVol,16)
+						if TriangleVolDec>=TriangleVolumeCutoff:
+							TriangleNoteDuration=i-TriangleLastFrame
+							TrianglePattern[n].append(TriangleNoteDuration-1)
+							TrianglePattern[n].append(mute_note)
+							TriangleLastFrame=i
+							TriangleLastNote=mute_note
+							TriangleVolMuted=0
+					
 				TriangleLastNote=TriangleNote
 			
 				
@@ -904,6 +952,7 @@ for n in range(TotalPatterns):
 					NoisePattern[n].append(mute_note)
 					NoiseLastNote=mute_note
 					NoiseLastFrame=i
+
 					
 				NoiseLastNote=NoiseNote	
 					
@@ -1167,12 +1216,11 @@ for n in range(TotalOrders):
 		buildstr="; S2 Pattern " + str(CurrentOrder) + " " + S2addr
 		program_data_out.append(buildstr)
 		
-		
+		print "Current Order is:", CurrentOrder, "CurrentPattern is:", CurrentPattern
 		
 		for i in range(CurrentPatternLen/2):
 			CurrentNoteEng=CurrentPattern[i*2]
 			CurrentDuration=CurrentPattern[i*2+1]
-			
 			if ((CurrentNoteEng != mute_note) and (CurrentNoteEng != 108)):  #Normal note positions
 				CurrentNotePos=ABCList.index(CurrentNoteEng)
 				if ((CurrentNotePos + Square2NoteModifier)) >= max_note:
