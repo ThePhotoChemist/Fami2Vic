@@ -1,7 +1,9 @@
 # Fami2Vic
 Software to convert FamiTracker .txt exports to a playable PRG on a VIC-20
 
-This is a work in progress, but nearly complete!  Mind the dust!
+This is a work in progress, but nearly complete!  Mind the dust!  
+
+The python script is written for python 2.7
 
 To use:
 
